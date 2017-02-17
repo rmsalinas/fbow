@@ -27,3 +27,12 @@ If use this project please cite
   url = {https://github.com/rmsalinas/fbow},
   urldate = {2017-02-17}
 }
+
+##
+## Vocabularies
+
+In directory vocabularies you have the ORBSLAM2 vocabulary (https://github.com/raulmur/ORB_SLAM2/tree/master/Vocabulary) in fbow format.
+##
+## Test speed
+ Go to test and run the program test_dbow2VSfbow
+
