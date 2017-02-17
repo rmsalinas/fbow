@@ -1,6 +1,6 @@
 FBOW
 =====
-FBOW (Fast Bag of Words) is an extremmely optimizaed version of the DBow2/DBow3 libraries. The library is highly optimized to speed up the Bag of Words creation using lastests AVX,SSE and MMX instructions. In loading a vocabulary, fbow is ~80x faster than DBOW2 (see tests directory and try). In transform an image into a bag of words using  on  machines with AVX instructions, it is ~6.4x faster.
+FBOW (Fast Bag of Words) is an extremmely optimized version of the DBow2/DBow3 libraries. The library is highly optimized to speed up the Bag of Words creation using lastests AVX,SSE and MMX instructions. In loading a vocabulary, fbow is ~80x faster than DBOW2 (see tests directory and try). In transform an image into a bag of words using  on  machines with AVX instructions, it is ~6.4x faster.
 
 ## 
 ## Main features:
@@ -15,3 +15,15 @@ FBOW (Fast Bag of Words) is an extremmely optimizaed version of the DBow2/DBow3 
 
 	* Not yet implemented indexing of images. 
 
+##
+## Citing
+
+If use this project please cite
+
+@online{Fbow,
+  author = {Rafael Muñoz-Salinas},
+  title = {{FBox} Fast Bag of Words},
+  year = 2017,
+  url = {https://github.com/rmsalinas/fbow},
+  urldate = {2017-02-17}
+}
