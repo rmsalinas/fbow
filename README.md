@@ -1,6 +1,6 @@
 FBOW
 =====
-FBOW (Fast Bag of Words) is an extremmely optimized version of the DBow2/DBow3 libraries. The library is highly optimized to speed up the Bag of Words creation using  AVX,SSE and MMX instructions. In loading a vocabulary, fbow is ~80x faster than DBOW2 (see tests directory and try). In transforming an image into a bag of words using on machines with AVX instructions, it is ~6.4x faster.
+FBOW (Fast Bag of Words) is an extremmely optimized version of the DBow2/DBow3 libraries. The library is highly optimized to speed up the Bag of Words creation using  AVX,SSE and MMX instructions. In loading a vocabulary, fbow is ~80x faster than DBOW2 (see tests directory and try). In transforming an image into a bag of words using on machines with AVX instructions, it is ~6.4x faster in the ORB vocabulary of ORB2Slam.
 
 ## 
 ## Main features:
@@ -35,5 +35,5 @@ If use this project please cite
 In directory vocabularies you have the ORBSLAM2 vocabulary (https://github.com/raulmur/ORB_SLAM2/tree/master/Vocabulary) in fbow format.
 ##
 ## Test speed
- Go to test and run the program test_dbow2VSfbow
+ Go to test and run the program test_dbow2VSfbow. Fbow is ~80x faster than DBOW2  in loading the vocabulary, and ~6.4x in transforming an image into a bag of words.
 
