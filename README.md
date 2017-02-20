@@ -20,13 +20,14 @@ FBOW (Fast Bag of Words) is an extremmely optimized version of the DBow2/DBow3 l
 
 If use this project please cite
 
-@online{Fbow,
-  author = {Rafael Muñoz-Salinas},
-  title = {{FBox} Fast Bag of Words},
-  year = 2017,
-  url = {https://github.com/rmsalinas/fbow},
-  urldate = {2017-02-17}
-}
+```
+@online{FBow, author = {Rafael Muñoz-Salinas}, 
+   title = {{FBow} Fast Bag of Words}, 
+  year = 2017, 
+  url = {https://github.com/rmsalinas/fbow}, 
+  urldate = {2017-02-17} 
+ } 
+```
 
 ##
 ## Vocabularies
