@@ -42,12 +42,14 @@ endif()
 OPTION(USE_OWN_EIGEN3	"Set to OFF to use a standard eigen3 version" ON)
 OPTION(BUILD_UTILS	"Set to OFF to not build utils" ON)
 OPTION(BUILD_SHARED_LIBS 	"Set to OFF to build static libraries" ON)
-OPTION(USE_MMX "Set on/off" YES)
 OPTION(USE_CONTRIB "Set on/off" OFF)
 # ----------------------------------------------------------------------------
 #   Find Dependencies
 # ----------------------------------------------------------------------------
 find_package(OpenCV  REQUIRED)
+INCLUDE_DIRECTORIES(${OpenCV_INCLUDE_DIRS})
+MESSAGE("OPENCVINCDIR=${OpenCV_INCLUDE_DIRS}")
+
 IF(USE_CONTRIB)
 add_definitions(-DUSE_CONTRIB)
 ENDIF()
@@ -59,7 +61,8 @@ ELSE()
 ENDIF()
 
 SET(REQUIRED_LIBRARIES ${REQUIRED_LIBRARIES} ${OpenCV_LIBS})
-
+SET(USE_AVX ON)
+SET(USE_SSE3 ON)
 
 # ----------------------------------------------------------------------------
 #   PROJECT CONFIGURATION
@@ -83,9 +86,8 @@ ADD_CUSTOM_TARGET(uninstall "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/c
 # create configuration file from .in file (If you use windows take care with paths)
 # ----------------------------------------------------------------------------
 
-CONFIGURE_FILE("${PROJECT_SOURCE_DIR}/config.cmake.in" "${PROJECT_BINARY_DIR}/Find${PROJECT_NAME}.cmake")
 CONFIGURE_FILE("${PROJECT_SOURCE_DIR}/config.cmake.in" "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake")
-INSTALL(FILES "${PROJECT_BINARY_DIR}/Find${PROJECT_NAME}.cmake" DESTINATION lib/cmake/ )
+INSTALL(FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake" DESTINATION share/${PROJECT_NAME}/ )
 
 
 
@@ -130,6 +132,8 @@ IF(CMAKE_COMPILER_IS_GNUCXX OR MINGW)
         set(USE_SSE2 OFF CACHE BOOL "Enable SSE2 for GCC")
         set(USE_SSE3 OFF CACHE BOOL "Enable SSE3 for GCC")
     endif ()
+    set(USE_AVX OFF CACHE BOOL "Enable AVX for GCC")
+
 
     set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -Wall")
 
@@ -165,18 +169,25 @@ IF(CMAKE_COMPILER_IS_GNUCXX OR MINGW)
     endif()
     if(USE_MMX)
        set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} -mmmx")
+       add_definitions(-DUSE_MMX)
     endif()
     if(USE_SSE)
        set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} -msse")
+       add_definitions(-DUSE_SSE)
     endif()
     if(USE_SSE2)
        set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} -msse2")
+       add_definitions(-DUSE_SSE2)
     endif()
     if(USE_SSE3 AND NOT MINGW) # SSE3 should be disabled under MingW because it generates compiler errors
        set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} -msse3")
+       add_definitions(-DUSE_SSE3)
+    endif()
+    IF(USE_AVX)
+     set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} -mavx")
     endif()
 
-    if(ENABLE_PROFILING)
+ if(ENABLE_PROFILING)
         set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} -pg -g")
     else()
         if(NOT APPLE)
@@ -190,8 +201,9 @@ IF(CMAKE_COMPILER_IS_GNUCXX OR MINGW)
     ENDIF()
 
 
-    set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} -mmmx -msse -msse2 -msse3 -mavx")
-    set(EXTRA_C_FLAGS_DEBUG "-g3  -DDEBUG -D_DEBUG -mmmx -msse -msse2 -msse3 -mavx")
+    set(CMAKE_CXX_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE}  -O3  -std=c++11 -Wall -DNDEBUG")
+    set(CMAKE_CXX_FLAGS_DEBUG "${EXTRA_C_FLAGS_RELEASE}  -g3  -DDEBUG -D_DEBUG   -std=c++11 -Wall")
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${EXTRA_C_FLAGS_RELEASE} -O2 -g3  -DDEBUG -D_DEBUG  -std=c++11 -Wall")
 
     MESSAGE( STATUS "-------------------------------------------------------------------------------" )
     message( STATUS "GNU COMPILER")
@@ -202,6 +214,8 @@ IF(CMAKE_COMPILER_IS_GNUCXX OR MINGW)
 
 ELSE()  # MSVC
 
+add_definitions(-DNOMINMAX)
+
 
 ENDIF()#END OF COMPILER SPECIFIC OPTIONS
 find_package(OpenMP  )
@@ -209,13 +223,9 @@ if (OPENMP_FOUND)
         set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 ENDIF()
-
-    SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} ${EXTRA_C_FLAGS_RELEASE}")
-    SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS}  ${EXTRA_C_FLAGS_DEBUG}")
-    SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -std=c++11 -Wall")
-    SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -std=c++11  -Wall")
-    set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELEASE} ${CMAKE_C_FLAGS_DEBUG}")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_DEBUG}")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS} ")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${CMAKE_CXX_FLAGS} ")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${CMAKE_CXX_FLAGS} ")
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${EXTRA_EXE_LINKER_FLAGS}")
     SET(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} ${EXTRA_EXE_LINKER_FLAGS_RELEASE}")
     SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} ${EXTRA_EXE_LINKER_FLAGS_DEBUG}")
