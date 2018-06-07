@@ -190,7 +190,12 @@ private:
             _block_desc_size_bytes_wp=block_desc_size_bytes_wp;
             assert(_block_desc_size_bytes_wp%sizeof(register_type )==0);
             _nwords=_block_desc_size_bytes_wp/sizeof(register_type );//number of aligned words
-            feature=(register_type*)aligned_alloc(aligment,_nwords*sizeof(register_type ));
+            
+#if _WIN32
+            feature = (register_type*)_aligned_malloc(aligment, _nwords * sizeof(register_type));
+#else
+            feature = (register_type*)aligned_alloc(aligment, _nwords * sizeof(register_type));
+#endif
            memset(feature,0,_nwords*sizeof(register_type ));
         }
         inline void startwithfeature(const register_type *feat_ptr){memcpy(feature,feat_ptr,_desc_size);}

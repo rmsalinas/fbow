@@ -75,7 +75,7 @@ void print(cpu_x86 host_info)  {
 
 int main(){
 
-    cout << "CPU Vendor String: " << cpu_x86::get_vendor_string() << endl;
+    cout << "CPU Vendor String: " << cpu_x86::get_vendor_string().c_str() << endl;
     cout << endl;
     cpu_x86 features;
     features.detect_host();
