@@ -46,7 +46,7 @@ void Vocabulary::setParams(int aligment, int k, int desc_type, int desc_size, in
     //give memory
     _params._total_size=_params._block_size_bytes_wp*_params._nblocks;
 #if _WIN32
-    _data = (char*)_aligned_malloc(_params._aligment, _params._total_size);
+    _data = (char*)_aligned_malloc(_params._total_size, _params._aligment);
 #else
     _data=(char*)aligned_alloc(_params._aligment,_params._total_size);
 #endif
@@ -153,7 +153,7 @@ void Vocabulary::fromStream(std::istream &str)throw(std::exception)
     str.read((char*)&_params,sizeof(params));
     
 #if _WIN32
-    _data = (char*)_aligned_malloc(_params._aligment, _params._total_size);
+    _data = (char*)_aligned_malloc(_params._total_size, _params._aligment);
 #else
     _data = (char*)aligned_alloc(_params._aligment, _params._total_size);
 #endif

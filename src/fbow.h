@@ -192,7 +192,7 @@ private:
             _nwords=_block_desc_size_bytes_wp/sizeof(register_type );//number of aligned words
             
 #if _WIN32
-            feature = (register_type*)_aligned_malloc(aligment, _nwords * sizeof(register_type));
+            feature = (register_type*)_aligned_malloc(_nwords * sizeof(register_type), aligment);
 #else
             feature = (register_type*)aligned_alloc(aligment, _nwords * sizeof(register_type));
 #endif
