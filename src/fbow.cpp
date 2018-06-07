@@ -45,7 +45,11 @@ void Vocabulary::setParams(int aligment, int k, int desc_type, int desc_size, in
 
     //give memory
     _params._total_size=_params._block_size_bytes_wp*_params._nblocks;
+#if _WIN32
+    _data = (char*)_aligned_malloc(_params._total_size, _params._aligment);
+#else
     _data=(char*)aligned_alloc(_params._aligment,_params._total_size);
+#endif
     memset( _data,0,_params._total_size);
 
 }
@@ -147,7 +151,13 @@ void Vocabulary::fromStream(std::istream &str)throw(std::exception)
     if (sig!=55824124) throw std::runtime_error("Vocabulary::fromStream invalid signature");
     //read string
     str.read((char*)&_params,sizeof(params));
-    _data=(char*)aligned_alloc(_params._aligment,_params._total_size);
+    
+#if _WIN32
+    _data = (char*)_aligned_malloc(_params._total_size, _params._aligment);
+#else
+    _data = (char*)aligned_alloc(_params._aligment, _params._total_size);
+#endif
+
     if (_data==0) throw std::runtime_error("Vocabulary::fromStream Could not allocate data");
     str.read(_data,_params._total_size);
 }
