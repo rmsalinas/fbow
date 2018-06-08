@@ -183,7 +183,15 @@ private:
         int _block_desc_size_bytes_wp;
         register_type *feature=0;
     public:
-         ~Lx(){if (feature!=0)free(feature);}
+         ~Lx(){
+             if (feature != 0) {
+#if WIN32
+                 _aligned_free(feature);
+#else
+                 free(feature);
+#endif
+             }
+         }
         void setParams(int desc_size, int block_desc_size_bytes_wp){
             assert(block_desc_size_bytes_wp%aligment==0);
             _desc_size=desc_size;

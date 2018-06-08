@@ -6,7 +6,13 @@ namespace fbow{
 
 
 Vocabulary::~Vocabulary(){
-    if (_data!=0) free( _data);
+        if (_data != 0) {
+#if WIN32
+            _aligned_free(_data);
+#else
+            free(_data);
+#endif
+        }
 }
 
 
