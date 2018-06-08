@@ -1,16 +1,16 @@
 #ifndef _FBOW_VOCABULARY_H
 #define _FBOW_VOCABULARY_H
-#include "exports.h"
+#include "fbow_exports.h"
 #include <iostream>
-#include <opencv2/core.hpp>
+#include <opencv2/core/core.hpp>
 #include <map>
 #include <memory>
 #include <bitset>
-#include "cpu_x86.h"
+#include "cpu.h"
 namespace fbow{
 
 //float initialized to zero.
-struct _float{
+struct FBOW_API _float{
     float var=0;
     inline float operator=(float &f){var=f;return var;}
     inline operator float&() {return var;}
@@ -19,7 +19,7 @@ struct _float{
 
 /**Bag of words
  */
-struct fBow:std::map<uint32_t,_float>{
+struct FBOW_API fBow:std::map<uint32_t,_float>{
 
     void toStream(std::ostream &str) const   {
         uint32_t _size=size();
@@ -51,6 +51,31 @@ struct fBow:std::map<uint32_t,_float>{
  */
 class FBOW_API Vocabulary
 {
+
+
+ static inline void * AlignedAlloc(int __alignment,int size){
+     assert(__alignment<256);
+
+     unsigned char *ptr= (unsigned  char*)malloc(size + __alignment);
+
+     if( !ptr )  return 0;
+
+     // align the pointer
+
+     size_t lptr=(size_t)ptr;
+     int off =lptr%__alignment;
+     if (off==0) off=__alignment;
+
+     ptr = ptr+off ; //move to next aligned address
+     *(ptr-1)=(unsigned char)off; //save in prev, the offset  to properly remove it
+     return ptr;
+ }
+     static inline void AlignedFree(void *ptr){
+         unsigned char *uptr=(unsigned char *)ptr;
+         unsigned char off= *(uptr-1);
+         uptr-=off;
+         std::free(uptr);
+     }
     friend class VocabularyCreator;
  public:
 
@@ -86,8 +111,8 @@ class FBOW_API Vocabulary
 private:
      void  setParams(  int aligment,int k,int desc_type,int desc_size, int nblocks,std::string desc_name)throw(std::runtime_error);
     struct params{
-        char _desc_name_[50]="";//descriptor name. May be empty
-        uint32_t _aligment,_nblocks=0 ;//memory aligment and total number of blocks
+        char _desc_name_[50];//descriptor name. May be empty
+        uint32_t _aligment=0,_nblocks=0 ;//memory aligment and total number of blocks
         uint64_t _desc_size_bytes_wp=0;//size of the descriptor(includes padding)
         uint64_t _block_size_bytes_wp=0;//size of a block   (includes padding)
         uint64_t _feature_off_start=0;//within a block, where the features start
@@ -167,7 +192,7 @@ private:
     inline void setBlock(uint32_t b,Block &block){ block._blockstart= _data+ b*_params._block_size_bytes_wp;}
 
     //information about the cpu so that mmx,sse or avx extensions can be employed
-    std::shared_ptr<cpu_x86> cpu_info;
+    std::shared_ptr<cpu> cpu_info;
 
 
     ////////////////////////////////////////////////////////////
@@ -183,20 +208,21 @@ private:
         int _block_desc_size_bytes_wp;
         register_type *feature=0;
     public:
-         ~Lx(){if (feature!=0)free(feature);}
+         ~Lx(){if (feature!=0)AlignedFree(feature);}
         void setParams(int desc_size, int block_desc_size_bytes_wp){
             assert(block_desc_size_bytes_wp%aligment==0);
             _desc_size=desc_size;
             _block_desc_size_bytes_wp=block_desc_size_bytes_wp;
             assert(_block_desc_size_bytes_wp%sizeof(register_type )==0);
             _nwords=_block_desc_size_bytes_wp/sizeof(register_type );//number of aligned words
-            feature=(register_type*)aligned_alloc(aligment,_nwords*sizeof(register_type ));
+            feature=(register_type*)AlignedAlloc(aligment,_nwords*sizeof(register_type ));
            memset(feature,0,_nwords*sizeof(register_type ));
         }
         inline void startwithfeature(const register_type *feat_ptr){memcpy(feature,feat_ptr,_desc_size);}
         virtual distType computeDist(register_type *fptr)=0;
 
     };
+
 
     struct L2_generic:public Lx<float,float,4>{
          ~L2_generic(){ }
@@ -206,7 +232,17 @@ private:
             return d;
         }
     };
+#ifdef __ANDROID__
+    //fake elements to allow compilation
+    struct L2_avx_generic:public Lx<uint64_t,float,32>{inline float computeDist(uint64_t *ptr){return std::numeric_limits<float>::max();}};
+    struct L2_se3_generic:public Lx<uint64_t,float,32>{inline float computeDist(uint64_t *ptr){return std::numeric_limits<float>::max();}};
+    struct L2_sse3_16w:public Lx<uint64_t,float,32>{inline float computeDist(uint64_t *ptr){return std::numeric_limits<float>::max();}};
+    struct L2_avx_8w:public Lx<uint64_t,float,32>{inline float computeDist(uint64_t *ptr){return std::numeric_limits<float>::max();}};
 
+
+
+
+#else
     struct L2_avx_generic:public Lx<__m256,float,32>{
         inline float computeDist(__m256 *ptr){
              __m256 sum=_mm256_setzero_ps(), sub_mult;
@@ -222,7 +258,6 @@ private:
             return  sum_ptr[0]+sum_ptr[4];
         }
     };
-
     struct L2_se3_generic:public Lx<__m128,float,16>{
         inline float computeDist(__m128 *ptr){
              __m128 sum=_mm_setzero_ps(), sub_mult;
@@ -272,11 +307,9 @@ private:
             float *sum_ptr=(float*)&sum;
             return  sum_ptr[0]+sum_ptr[4];
         }
-
-
     };
 
-
+ #endif
 
     //generic hamming distance calculator
      struct  L1_x64:public Lx<uint64_t,uint64_t,8>{
@@ -350,7 +383,7 @@ private:
                 if ( bn_info->isleaf())
                     result[bn_info->getId()]+=bn_info->weight;//if the node is leaf get word id and weight
                 else setBlock(bn_info->getId(),c_block);//go to its children
-            }while( !bn_info->isleaf());
+            }while( !bn_info->isleaf() && bn_info->getId()!=0);
         }
         return result;
     }

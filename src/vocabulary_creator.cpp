@@ -1,5 +1,10 @@
 #include "vocabulary_creator.h"
+#ifndef __ANDROID__
 #include <omp.h>
+#else
+inline int omp_get_max_threads(){return 1;}
+inline int omp_get_thread_num(){return 0;}
+#endif
 #include <iostream>
 using namespace std;
 namespace fbow{
@@ -107,9 +112,9 @@ void  VocabularyCreator::createLevel(  int parent, int curL,bool recursive){
         for(size_t i=0;i<centers.size();i++)
             center_features[i]=_features[centers[i]];
         //do k means evolution to move means
-        size_t prev_hash=0,cur_hash=0;
+        size_t prev_hash=1,cur_hash=0;
         int niters=0;
-        do{
+        while(niters<_params.maxIters && cur_hash!=prev_hash ){
             std::swap(prev_hash,cur_hash);
             //do assigment
             assignToClusters(findices,center_features,assigments_ref /*,parent==0*/);
@@ -117,9 +122,10 @@ void  VocabularyCreator::createLevel(  int parent, int curL,bool recursive){
             center_features=recomputeCenters(assigments_ref/*,parent==0*/);
             cur_hash=vhash(assigments_ref);
             niters++;
-           }while(cur_hash!=prev_hash &&  ( (_params.maxIters==-1) || (_params.maxIters!=-1 && niters++<_params.maxIters)) );
-        //do final assigment if not waited until convergence
-        if(_params.maxIters!=-1)assignToClusters(findices,center_features,assigments_ref /*,parent==0*/);
+           };
+
+        assignToClusters(findices,center_features,assigments_ref /*,parent==0*/);
+        if (_params.verbose) std::cerr<<"Cluster created :"<<parent<<" "<<curL<<endl;
 
     }
 

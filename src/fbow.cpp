@@ -1,18 +1,21 @@
 #include "fbow.h"
 #include <fstream>
 #include <cstring>
+#include <limits>
+#include <cstdint>
+#include <algorithm>
 
 namespace fbow{
 
 
 Vocabulary::~Vocabulary(){
-    if (_data!=0) free( _data);
+    if (_data!=0) AlignedFree( _data);
 }
 
 
 void Vocabulary::setParams(int aligment, int k, int desc_type, int desc_size, int nblocks, std::string desc_name)throw(std::runtime_error){
-    //if(k>128)throw std::runtime_error("fbow::Vocabulary::setParams k must be <=128")
-    desc_name.resize(std::min(desc_name.size(),size_t(49)));
+    auto ns= desc_name.size()<static_cast<size_t>(49)?desc_name.size():128;
+    desc_name.resize(ns);
 
     std::strcpy(_params._desc_name_,desc_name.c_str());
     _params._aligment=aligment;
@@ -45,7 +48,7 @@ void Vocabulary::setParams(int aligment, int k, int desc_type, int desc_size, in
 
     //give memory
     _params._total_size=_params._block_size_bytes_wp*_params._nblocks;
-    _data=(char*)aligned_alloc(_params._aligment,_params._total_size);
+    _data=(char*)AlignedAlloc(_params._aligment,_params._total_size);
     memset( _data,0,_params._total_size);
 
 }
@@ -59,29 +62,31 @@ fBow Vocabulary::transform(const cv::Mat &features)throw(std::exception)
 
     //get host info to decide the version to execute
     if (!cpu_info){
-        cpu_info=std::make_shared<cpu_x86>();
+        cpu_info=std::make_shared<cpu>();
         cpu_info->detect_host();
     }
     fBow result;
     //decide the version to employ according to the type of features, aligment and cpu capabilities
     if (_params._desc_type==CV_8UC1){
-
         //orb
         if (cpu_info->HW_x64){
-            if (_params._desc_size==32) result=_transform<L1_32bytes>(features);
+            if (_params._desc_size==32)
+				result=_transform<L1_32bytes>(features);
             //full akaze
-            else if( _params._desc_size==61 && _params._aligment%8==0) result=_transform<L1_61bytes>(features);
+            else if( _params._desc_size==61 && _params._aligment%8==0)
+				result=_transform<L1_61bytes>(features);
             //generic
-            else result=_transform<L1_x64>(features );
+            else
+				result=_transform<L1_x64>(features );
         }
         else  result=  _transform<L1_x32>(features );
     }
     else if(features.type()==CV_32FC1){
-        if( cpu_info->HW_AVX && _params._aligment%32==0){ //AVX version
+        if( cpu_info->isSafeAVX() && _params._aligment%32==0){ //AVX version
             if ( _params._desc_size==256) result= _transform<L2_avx_8w>(features);//specific for surf 256 bytes
             else result= _transform<L2_avx_generic>(features);//any other
         }
-        if( cpu_info->HW_SSE && _params._aligment%16==0){//SSE version
+        if( cpu_info->isSafeSSE() && _params._aligment%16==0){//SSE version
             if ( _params._desc_size==256) result= _transform<L2_sse3_16w>(features);//specific for surf 256 bytes
             else result=_transform<L2_se3_generic>(features);//any other
         }
@@ -108,7 +113,7 @@ fBow Vocabulary::transform(const cv::Mat &features)throw(std::exception)
 
 void Vocabulary::clear()
 {
-    if (_data!=0) free(_data);
+    if (_data!=0) AlignedFree(_data);
     _data=0;
     memset(&_params,0,sizeof(_params));
     _params._desc_name_[0]='\0';
@@ -117,13 +122,13 @@ void Vocabulary::clear()
 
 //loads/saves from a file
 void Vocabulary::readFromFile(const std::string &filepath)throw(std::exception){
-    std::ifstream file(filepath);
+    std::ifstream file(filepath,std::ios::binary);
     if (!file) throw std::runtime_error("Vocabulary::readFromFile could not open:"+filepath);
     fromStream(file);
 }
 
 void Vocabulary::saveToFile(const std::string &filepath)throw(std::exception){
-    std::ofstream file(filepath);
+	std::ofstream file(filepath, std::ios::binary);
     if (!file) throw std::runtime_error("Vocabulary::saveToFile could not open:"+filepath);
     toStream(file);
 
@@ -141,18 +146,18 @@ void Vocabulary::toStream(std::ostream &str)const{
 
 void Vocabulary::fromStream(std::istream &str)throw(std::exception)
 {
-    if (_data!=0) free (_data);
+    if (_data!=0) AlignedFree (_data);
     uint64_t sig;
     str.read((char*)&sig,sizeof(sig));
     if (sig!=55824124) throw std::runtime_error("Vocabulary::fromStream invalid signature");
     //read string
     str.read((char*)&_params,sizeof(params));
-    _data=(char*)aligned_alloc(_params._aligment,_params._total_size);
+    _data=(char*)AlignedAlloc(_params._aligment,_params._total_size);
     if (_data==0) throw std::runtime_error("Vocabulary::fromStream Could not allocate data");
     str.read(_data,_params._total_size);
 }
 
-double fBow::score(const  fBow &v1,const fBow &v2){
+double fBow::score (const  fBow &v1,const fBow &v2){
 
 
     fBow::const_iterator v1_it, v2_it;
@@ -180,13 +185,17 @@ double fBow::score(const  fBow &v1,const fBow &v2){
         else if(v1_it->first < v2_it->first)
         {
             // move v1 forward
-            v1_it = v1.lower_bound(v2_it->first);
-            // v1_it = (first element >= v2_it.id)
+//            v1_it = v1.lower_bound(v2_it->first);
+            while(v1_it!=v1_end&& v1_it->first<v2_it->first)
+                ++v1_it;
         }
         else
         {
             // move v2 forward
-            v2_it = v2.lower_bound(v1_it->first);
+//            v2_it = v2.lower_bound(v1_it->first);
+            while(v2_it!=v2_end && v2_it->first<v1_it->first)
+                ++v2_it;
+
             // v2_it = (first element >= v1_it.id)
         }
     }

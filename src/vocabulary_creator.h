@@ -1,17 +1,19 @@
 #ifndef _FBOW_VOCABULARYCREATOR_H
 #define _FBOW_VOCABULARYCREATOR_H
-#include "exports.h"
 #include <iostream>
 #include <queue>
 #include <thread>
 #include <mutex>
 #include <atomic>
 #include <condition_variable>
-#include <opencv2/core.hpp>
-#include "fbow.h"
 #include <map>
-#include<list>
+#include <list>
+#include <limits>
+#include <cstdint>
 #include <functional>
+#include <opencv2/core/core.hpp>
+#include "fbow_exports.h"
+#include "fbow.h"
 namespace fbow{
 /**This class creates the vocabulary
  */
@@ -27,6 +29,7 @@ public:
         int L=-1;
         uint32_t nthreads=1;
         int maxIters=11;
+        bool verbose=false;
     };
 
     //create this from a set of features
@@ -144,7 +147,7 @@ private:
     //
     struct Node{
         Node(){}
-        Node(uint32_t Id,uint32_t Parent,const cv::Mat &Feature, uint32_t Feat_idx=std::numeric_limits<uint32_t>::max()):id(Id),parent(Parent),feature(Feature),feat_idx(Feat_idx){
+        Node(uint32_t Id,uint32_t Parent,const cv::Mat &Feature, uint32_t Feat_idx=std::numeric_limits<uint32_t>::max() ):id(Id),parent(Parent),feature(Feature),feat_idx(Feat_idx){
 
         }
 
