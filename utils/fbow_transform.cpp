@@ -66,12 +66,14 @@ int main(int argc,char **argv){
         {
             fbow::fBow vv;
             auto t_start=std::chrono::high_resolution_clock::now();
-            for(int i=0;i<1000;i++)
+            for(int i=0;i<1;i++){
                 vv=voc.transform(features[0]);
+            }
             auto t_end=std::chrono::high_resolution_clock::now();
             cout<<"time="<<double(std::chrono::duration_cast<std::chrono::milliseconds>(t_end-t_start).count())<<" ms"<<endl;
             cout<<vv.begin()->first<<" "<<vv.begin()->second<<endl;
             cout<<vv.rbegin()->first<<" "<<vv.rbegin()->second<<endl;
+            for(auto v:vv)cout<<v.first<<" ";cout<<endl;
         }
 
     }catch(std::exception &ex){

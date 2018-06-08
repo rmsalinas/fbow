@@ -13,7 +13,7 @@
 #include <opencv2/xfeatures2d/nonfree.hpp>
 #include <opencv2/xfeatures2d.hpp>
 #endif
-#include "dirreader.h"
+
 using namespace fbow;
 using namespace std;
 
@@ -32,6 +32,24 @@ void wait()
 }
 
 
+vector<string> readImagePathsFromFile(char * txtlist){
+    vector<string> paths;
+    // Open file
+	std::ifstream infile(txtlist, std::ios::binary);
+
+    while(!infile.eof())
+    {
+        string line;
+        getline(infile, line);
+
+        if (line.length() > 0)
+           paths.push_back(line);
+
+        //std::cout << line << std::endl;
+    }
+
+    return paths;
+}
 
 vector< cv::Mat  >  loadFeatures( std::vector<string> path_to_images,string descriptor="") throw (std::exception){
     //select detector
@@ -57,14 +75,11 @@ vector< cv::Mat  >  loadFeatures( std::vector<string> path_to_images,string desc
         cv::Mat descriptors;
         cout<<"reading image: "<<path_to_images[i]<<endl;
         cv::Mat image = cv::imread(path_to_images[i], 0);
-        if(image.empty()) {
-            std::cerr<<"Could not open image:"<<path_to_images[i]<<std::endl;
-            continue;
-        }
+        if(image.empty())throw std::runtime_error("Could not open image"+path_to_images[i]);
+        cout<<"extracting features"<<endl;
         fdetector->detectAndCompute(image, cv::Mat(), keypoints, descriptors);
-        cout<<"extracting features: total= "<<keypoints.size() <<endl;
         features.push_back(descriptors);
-        cout<<"done detecting features"<<endl;
+        cout<<"done detecting features (" << i << "/" << path_to_images.size() << ")" <<endl;
     }
     return features;
 }
@@ -74,7 +89,7 @@ void saveToFile(string filename,const vector<cv::Mat> &features,  std::string  d
 
     //test it is not created
     if (!rewrite){
-        std::fstream ifile(filename, std::ios::binary);
+        std::fstream ifile(filename);
         if (ifile.is_open())//read size and rewrite
             std::runtime_error( "ERROR::: Output File "+filename+" already exists!!!!!" );
     }
@@ -106,21 +121,19 @@ int main(int argc,char **argv)
 
     try{
         CmdLineParser cml(argc,argv);
-        if (cml["-h"] || argc<4){
-            cerr<<"Usage:  descriptor_name output dir_with_images \n\t descriptors:brisk,surf,orb(default),akaze(only if using opencv 3)"<<endl;
+        if (cml["-h"] || argc==1){
+            cerr<<"Usage:  descriptor_name output txtlist \n\t descriptors:brisk,surf,orb(default),akaze(only if using opencv 3)"<<endl;
             return -1;
         }
 
         string descriptor=argv[1];
         string output=argv[2];
 
-        auto images= DirReader::read( argv[3]);
+        auto images=readImagePathsFromFile(argv[3]);
         vector< cv::Mat   >   features= loadFeatures(images,descriptor);
 
         //save features to file
-        std::cerr<<"saving to "<<argv[2]<<std::endl;
         saveToFile(argv[2],features,descriptor);
-
 
     }catch(std::exception &ex){
         cerr<<ex.what()<<endl;

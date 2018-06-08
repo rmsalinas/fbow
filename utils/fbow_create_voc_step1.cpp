@@ -18,7 +18,7 @@ class CmdLineParser{int argc; char **argv; public: CmdLineParser(int _argc,char 
 vector<cv::Mat> readFeaturesFromFile(string filename,std::string &desc_name){
 vector<cv::Mat> features;
     //test it is not created
-    std::ifstream ifile(filename);
+    std::ifstream ifile(filename,std::ios::binary);
     if (!ifile.is_open()){cerr<<"could not open input file"<<endl;exit(0);}
 
 
@@ -49,7 +49,10 @@ int main(int argc,char **argv)
     try{
         CmdLineParser cml(argc,argv);
         if (cml["-h"] || argc<3){
-            cerr<<"Usage:  features output.fbow [-k k] [-l L] [-t nthreads]"<<endl;
+            cerr<<"Usage:  features output.fbow [-k k] [-l L] [-t nthreads] [-maxIters <int>:0 default] [-v verbose on]. "<<endl;
+            cerr<<"Creates the vocabylary of k^L"<<endl;
+            cerr<<"By default, we employ a random selection center without runnning a single iteration of the k means.\n"
+                  "As indicated by the authors of the flann library in their paper, the result is not very different from using k-means, but speed is much better\n";
             return -1;
         }
 
@@ -58,15 +61,18 @@ int main(int argc,char **argv)
         auto features=readFeaturesFromFile(argv[1],desc_name);
 
         cout<<"DescName="<<desc_name<<endl;
-        const int k = stoi(cml("-k","10"));
-        const int L = stoi(cml("-l","6"));
-        const int nThreads=stoi(cml("-t","1"));
+        fbow::VocabularyCreator::Params params;
+        params.k = stoi(cml("-k","10"));
+        params.L = stoi(cml("-l","6"));
+        params.nthreads=stoi(cml("-t","1"));
+        params.maxIters=std::stoi (cml("-maxIters","0"));
+        params.verbose=cml["-v"];
         srand(0);
         fbow::VocabularyCreator voc_creator;
         fbow::Vocabulary voc;
-        cout << "Creating a " << k << "^" << L << " vocabulary..." << endl;
+        cout << "Creating a " << params.k << "^" << params.L << " vocabulary..." << endl;
         auto t_start=std::chrono::high_resolution_clock::now();
-        voc_creator.create(voc,features,desc_name, fbow::VocabularyCreator::Params(k, L,nThreads));
+        voc_creator.create(voc,features,desc_name, params);
         auto t_end=std::chrono::high_resolution_clock::now();
         cout<<"time="<<double(std::chrono::duration_cast<std::chrono::milliseconds>(t_end-t_start).count())<<" msecs"<<endl;
         cout<<"nblocks="<<voc.size()<<endl;
