@@ -1,15 +1,13 @@
 
 #include <iostream>
-using std::cout;
-using std::endl;
-
-#include "cpu_x86.h"
+#include "cpu.h"
+using namespace std;
 using namespace fbow;
 void print(const char* label, bool yes){
     cout << label;
     cout << (yes ? "Yes" : "No") << endl;
 }
-void print(cpu_x86 host_info)  {
+void print(cpu  host_info)  {
     cout << "CPU Vendor:" << endl;
     print("    AMD         = ", host_info.Vendor_AMD);
     print("    Intel       = ", host_info.Vendor_Intel);
@@ -75,11 +73,11 @@ void print(cpu_x86 host_info)  {
 
 int main(){
 
-    cout << "CPU Vendor String: " << cpu_x86::get_vendor_string() << endl;
-    cout << endl;
-    cpu_x86 features;
+    cout << "CPU Vendor String: " ;
+    std::cout<< cpu::get_vendor_string() ;
+    cpu features;
     features.detect_host();
-     print(features);
+    print(features);
 
 #if _WIN32
     system("pause");

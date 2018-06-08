@@ -13,7 +13,7 @@
 #include <opencv2/core/core.hpp>
 #include <vector>
 #include <string>
-
+#include <cstdint>
 #include "FClass.h"
 namespace DBoW2 {
 
