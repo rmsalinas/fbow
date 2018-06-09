@@ -43,6 +43,10 @@ OPTION(USE_OWN_EIGEN3	"Set to OFF to use a standard eigen3 version" ON)
 OPTION(BUILD_UTILS	"Set to OFF to not build utils" ON)
 OPTION(BUILD_SHARED_LIBS 	"Set to OFF to build static libraries" ON)
 OPTION(USE_CONTRIB "Set on/off" OFF)
+
+OPTION(USE_AVX "Set on/off" ON)
+OPTION(USE_SSE3 "Set on/off" ON)
+
 # ----------------------------------------------------------------------------
 #   Find Dependencies
 # ----------------------------------------------------------------------------
@@ -61,8 +65,6 @@ ELSE()
 ENDIF()
 
 SET(REQUIRED_LIBRARIES ${REQUIRED_LIBRARIES} ${OpenCV_LIBS})
-SET(USE_AVX ON)
-SET(USE_SSE3 ON)
 
 # ----------------------------------------------------------------------------
 #   PROJECT CONFIGURATION
@@ -189,8 +191,8 @@ IF(CMAKE_COMPILER_IS_GNUCXX OR MINGW)
        add_definitions(-DUSE_SSE4)
     endif()
 
-    IF(USE_AVX)
-     set(VECTORIAL_INSTRUCTIONS "${VECTORIAL_INSTRUCTIONS} -mavx")
+    IF(USE_AVX) 
+      set(VECTORIAL_INSTRUCTIONS "${VECTORIAL_INSTRUCTIONS} -mavx")
      add_definitions(-DUSE_AVX)
     endif()
 
@@ -212,6 +214,7 @@ IF(CMAKE_COMPILER_IS_GNUCXX OR MINGW)
     set(CMAKE_CXX_FLAGS_DEBUG "${VECTORIAL_INSTRUCTIONS}  -g3  -DDEBUG -D_DEBUG   -std=c++11 -Wall")
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${VECTORIAL_INSTRUCTIONS} -O2 -g3  -DDEBUG -D_DEBUG  -std=c++11 -Wall")
 
+    message(STATUS "vec=${VECTORIAL_INSTRUCTIONS}")
     MESSAGE( STATUS "-------------------------------------------------------------------------------" )
     message( STATUS "GNU COMPILER")
     MESSAGE( STATUS "-------------------------------------------------------------------------------" )
@@ -233,9 +236,9 @@ ENDIF()
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS} ")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${CMAKE_CXX_FLAGS} ")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${CMAKE_CXX_FLAGS} ")
-    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${EXTRA_EXE_LINKER_FLAGS}")
-    SET(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} ${EXTRA_EXE_LINKER_FLAGS_RELEASE}")
-    SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} ${EXTRA_EXE_LINKER_FLAGS_DEBUG}")
+SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${EXTRA_EXE_LINKER_FLAGS}")
+SET(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} ${EXTRA_EXE_LINKER_FLAGS_RELEASE}")
+SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} ${EXTRA_EXE_LINKER_FLAGS_DEBUG}")
 
 
 #------------------------------------------------
