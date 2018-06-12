@@ -56,6 +56,7 @@ class FBOW_API Vocabulary
 {
 
 
+
  static inline void * AlignedAlloc(int __alignment,int size){
      assert(__alignment<256);
 
@@ -82,7 +83,10 @@ class FBOW_API Vocabulary
     friend class VocabularyCreator;
  public:
 
-    ~Vocabulary();
+	Vocabulary(){};
+	~Vocabulary();
+	Vocabulary(const Vocabulary& voc);
+	Vocabulary& operator = (const Vocabulary &voc);
 
     //transform the features stored as rows in the returned BagOfWords
     fBow transform(const cv::Mat &features);
@@ -106,6 +110,10 @@ class FBOW_API Vocabulary
     bool isValid()const{return _data!=0;}
     //total number of blocks
     size_t size()const{return _params._nblocks;}
+	//total size of data
+	size_t totalSize()const{
+		return _params._total_size;
+	}
     //removes all data
     void clear();
     //returns a hash value idinfying the vocabulary
