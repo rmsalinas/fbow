@@ -17,7 +17,6 @@
 using namespace fbow;
 using namespace std;
 
-
 //command line parser
 class CmdLineParser{int argc; char **argv; public: CmdLineParser(int _argc,char **_argv):argc(_argc),argv(_argv){}  bool operator[] ( string param ) {int idx=-1;  for ( int i=0; i<argc && idx==-1; i++ ) if ( string ( argv[i] ) ==param ) idx=i;    return ( idx!=-1 ) ;    } string operator()(string param,string defvalue="-1"){int idx=-1;    for ( int i=0; i<argc && idx==-1; i++ ) if ( string ( argv[i] ) ==param ) idx=i; if ( idx==-1 ) return defvalue;   else  return ( argv[  idx+1] ); }};
 
@@ -38,7 +37,7 @@ vector<string> readImagePaths(int argc,char **argv,int start){
         return paths;
 }
 
-vector< cv::Mat  >  loadFeatures( std::vector<string> path_to_images,string descriptor="") throw (std::exception){
+vector< cv::Mat  >  loadFeatures( vector<string> path_to_images,string descriptor="") throw (exception){
     //select detector
     cv::Ptr<cv::Feature2D> fdetector;
     if (descriptor=="orb")        fdetector=cv::ORB::create(2000);
@@ -50,7 +49,7 @@ vector< cv::Mat  >  loadFeatures( std::vector<string> path_to_images,string desc
     else if(descriptor=="surf" )  fdetector=cv::xfeatures2d::SURF::create(15, 4, 2);
 #endif
 
-    else throw std::runtime_error("Invalid descriptor");
+    else throw runtime_error("Invalid descriptor");
     assert(!descriptor.empty());
     vector<cv::Mat>    features;
 
@@ -62,9 +61,10 @@ vector< cv::Mat  >  loadFeatures( std::vector<string> path_to_images,string desc
         cv::Mat descriptors;
         cout<<"reading image: "<<path_to_images[i]<<endl;
         cv::Mat image = cv::imread(path_to_images[i], 0);
-        if(image.empty())throw std::runtime_error("Could not open image"+path_to_images[i]);
+        if(image.empty())throw runtime_error("Could not open image"+path_to_images[i]);
         cout<<"extracting features"<<endl;
         fdetector->detectAndCompute(image, cv::Mat(), keypoints, descriptors);
+        cout << path_to_images[i] << " : " << descriptors.rows << endl;
         features.push_back(descriptors);
         cout<<"done detecting features"<<endl;
     }
@@ -72,33 +72,63 @@ vector< cv::Mat  >  loadFeatures( std::vector<string> path_to_images,string desc
 }
 
 // ----------------------------------------------------------------------------
-void saveToFile(string filename,const vector<cv::Mat> &features,  std::string  desc_name,bool rewrite =true)throw (std::exception){
+void saveToFile(string filename, const vector<cv::Mat> &features, string  desc_name, bool rewrite = true)throw (exception) {
 
     //test it is not created
-    if (!rewrite){
-        std::fstream ifile(filename);
+    if (!rewrite) {
+        fstream ifile(filename);
         if (ifile.is_open())//read size and rewrite
-            std::runtime_error( "ERROR::: Output File "+filename+" already exists!!!!!" );
+            runtime_error("ERROR::: Output File " + filename + " already exists!!!!!");
     }
-    std::ofstream ofile(filename);
-    if (!ofile.is_open()){cerr<<"could not open output file"<<endl;exit(0);}
+    ofstream ofile(filename);
+    if (!ofile.is_open()) { cerr << "could not open output file" << endl; exit(0); }
 
     char _desc_name[20];
-    desc_name.resize(min(size_t(19),desc_name.size()));
-    strcpy(_desc_name,desc_name.c_str());
-    ofile.write(_desc_name,20);
+    desc_name.resize(min(size_t(19), desc_name.size()));
+    strcpy(_desc_name, desc_name.c_str());
+    ofile.write(_desc_name, 20);
 
-    uint32_t size=features.size();
-    ofile.write((char*)&size,sizeof(size));
-    for(auto &f:features){
-        if( !f.isContinuous()){
-            cerr<<"Matrices should be continuous"<<endl;exit(0);
+    uint32_t size = features.size();
+    ofile.write((char*)&size, sizeof(size));
+    int i = 0;
+    for (auto &f : features) {
+        if (!f.isContinuous()) {
+            cerr << "Matrices should be continuous" << endl; exit(0);
         }
-        uint32_t aux=f.cols; ofile.write( (char*)&aux,sizeof(aux));
-        aux=f.rows; ofile.write( (char*)&aux,sizeof(aux));
-        aux=f.type(); ofile.write( (char*)&aux,sizeof(aux));
-        ofile.write( (char*)f.ptr<uchar>(0),f.total()*f.elemSize());
+        uint32_t aux = f.cols; ofile.write((char*)&aux, sizeof(aux));
+        cout << "i : " << i++ << "rows : " << f.rows << endl;
+        aux = f.rows; ofile.write((char*)&aux, sizeof(aux));
+        aux = f.type(); ofile.write((char*)&aux, sizeof(aux));
+        ofile.write((char*)f.ptr<uchar>(0), f.total()*f.elemSize());
     }
+}
+
+// ----------------------------------------------------------------------------
+void saveToYMLFile(string filename, const vector<cv::Mat> &features, string  desc_name, bool rewrite = true)throw (exception) {
+
+    //test it is not created
+    if (!rewrite) {
+        fstream ifile(filename);
+        if (ifile.is_open())//read size and rewrite
+            runtime_error("ERROR::: Output File " + filename + " already exists!!!!!");
+    }
+
+    cv::FileStorage file(filename, cv::FileStorage::WRITE);
+    if (!file.isOpened()) { cerr << "could not open output file" << endl; exit(0); }
+
+    // Declare what you need
+    file << "descriptor name" << desc_name;
+    file << "num features" << (int)(features.size());//does not handle size_t for some reason!
+    for (int i = 0; i < features.size();++i) {
+        if (!features[i].isContinuous()) {
+           cerr << "Matrices should be continuous" << endl; exit(0);
+        }
+        stringstream str;
+        str << "featureidx" << i;
+        // Write to file!
+        file << str.str() << features[i];
+    }
+    file.release();
 }
 
 // ----------------------------------------------------------------------------
@@ -120,9 +150,9 @@ int main(int argc,char **argv)
         vector< cv::Mat   >   features= loadFeatures(images,descriptor);
 
         //save features to file
-        saveToFile(argv[2],features,descriptor);
+        saveToYMLFile(argv[2],features,descriptor);
 
-    }catch(std::exception &ex){
+    }catch(exception &ex){
         cerr<<ex.what()<<endl;
     }
 

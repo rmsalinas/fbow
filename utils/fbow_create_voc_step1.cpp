@@ -15,28 +15,49 @@ class CmdLineParser{int argc; char **argv; public: CmdLineParser(int _argc,char 
 // ----------------------------------------------------------------------------
 
 // ----------------------------------------------------------------------------
-vector<cv::Mat> readFeaturesFromFile(string filename,std::string &desc_name){
-vector<cv::Mat> features;
+vector<cv::Mat> readFeaturesFromFile(string filename, std::string &desc_name) {
+    vector<cv::Mat> features;
     //test it is not created
     std::ifstream ifile(filename);
-    if (!ifile.is_open()){cerr<<"could not open input file"<<endl;exit(0);}
+    if (!ifile.is_open()) { cerr << "could not open input file" << endl; exit(0); }
 
 
     char _desc_name[20];
-    ifile.read(_desc_name,20);
-    desc_name=_desc_name;
+    ifile.read(_desc_name, 20);
+    desc_name = _desc_name;
 
     uint32_t size;
-    ifile.read((char*)&size,sizeof(size));
+    ifile.read((char*)&size, sizeof(size));
     features.resize(size);
-    for(size_t i=0;i<size;i++){
+    for (size_t i = 0; i<size; i++) {
 
-        uint32_t cols,rows,type;
-        ifile.read( (char*)&cols,sizeof(cols));
-        ifile.read( (char*)&rows,sizeof(rows));
-        ifile.read( (char*)&type,sizeof(type));
-        features[i].create(rows,cols,type);
-        ifile.read( (char*)features[i].ptr<uchar>(0),features[i].total()*features[i].elemSize());
+        uint32_t cols, rows, type;
+        ifile.read((char*)&cols, sizeof(cols));
+        ifile.read((char*)&rows, sizeof(rows));
+        std::cout << " i : " << i << " rows : " << rows << std::endl;
+        ifile.read((char*)&type, sizeof(type));
+        features[i].create(rows, cols, type);
+        ifile.read((char*)features[i].ptr<uchar>(0), features[i].total()*features[i].elemSize());
+    }
+    return features;
+}
+
+vector<cv::Mat> readFeaturesFromYMLFile(string filename, std::string &desc_name) {
+    vector<cv::Mat> features;
+    cv::FileStorage file(filename, cv::FileStorage::READ);
+    //test it is not created
+    std::ifstream ifile(filename);
+    if (!file.isOpened()) { cerr << "could not open input file" << endl; exit(0); }
+    int size;
+
+    file["descriptor name"] >> desc_name;
+    file["num features"] >> size;//does not support uint32_t
+    features.resize(size);
+    for (size_t i = 0; i<size; i++) {
+        stringstream str;
+        str << "featureidx" << i;
+        file[str.str()] >> features[i];
+        
     }
     return features;
 }
@@ -55,7 +76,7 @@ int main(int argc,char **argv)
 
 
         string desc_name;
-        auto features=readFeaturesFromFile(argv[1],desc_name);
+        auto features= readFeaturesFromYMLFile(argv[1],desc_name);
 
         cout<<"DescName="<<desc_name<<endl;
         const int k = stoi(cml("-k","10"));
