@@ -54,7 +54,7 @@ void Vocabulary::setParams(int aligment, int k, int desc_type, int desc_size, in
 }
 
 
-fBow Vocabulary::transform(const cv::Mat &features)throw(std::exception)
+fBow Vocabulary::transform(const cv::Mat &features)
 {
     if (features.rows==0) throw std::runtime_error("Vocabulary::transform No input data");
     if (features.type()!=_params._desc_type) throw std::runtime_error("Vocabulary::transform features are of different type than vocabulary");
@@ -121,13 +121,13 @@ void Vocabulary::clear()
 
 
 //loads/saves from a file
-void Vocabulary::readFromFile(const std::string &filepath)throw(std::exception){
+void Vocabulary::readFromFile(const std::string &filepath){
     std::ifstream file(filepath,std::ios::binary);
     if (!file) throw std::runtime_error("Vocabulary::readFromFile could not open:"+filepath);
     fromStream(file);
 }
 
-void Vocabulary::saveToFile(const std::string &filepath)throw(std::exception){
+void Vocabulary::saveToFile(const std::string &filepath){
 	std::ofstream file(filepath, std::ios::binary);
     if (!file) throw std::runtime_error("Vocabulary::saveToFile could not open:"+filepath);
     toStream(file);
@@ -144,7 +144,7 @@ void Vocabulary::toStream(std::ostream &str)const{
     str.write(_data,_params._total_size);
 }
 
-void Vocabulary::fromStream(std::istream &str)throw(std::exception)
+void Vocabulary::fromStream(std::istream &str)
 {
     if (_data!=0) AlignedFree (_data);
     uint64_t sig;

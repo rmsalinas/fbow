@@ -85,15 +85,15 @@ class FBOW_API Vocabulary
     ~Vocabulary();
 
     //transform the features stored as rows in the returned BagOfWords
-    fBow transform(const cv::Mat &features)throw(std::exception);
+    fBow transform(const cv::Mat &features);
 
 
     //loads/saves from a file
-    void readFromFile(const std::string &filepath)throw(std::exception);    
-    void saveToFile(const std::string &filepath)throw(std::exception);
+    void readFromFile(const std::string &filepath);
+    void saveToFile(const std::string &filepath);
     ///save/load to binary streams
     void toStream(std::ostream &str) const;
-    void fromStream(std::istream &str)throw(std::exception);
+    void fromStream(std::istream &str);
     //returns the descriptor type (CV_8UC1, CV_32FC1  )
     uint32_t getDescType()const{return _params._desc_type;}
     //returns desc size in bytes or 0 if not set
@@ -359,7 +359,7 @@ private:
 
 
     template<typename Computer>
-    fBow _transform(const cv::Mat &features)throw(std::exception){
+    fBow _transform(const cv::Mat &features){
         Computer comp;
         comp.setParams(_params._desc_size,_params._desc_size_bytes_wp);
         using DType=typename Computer::DType;//distance type

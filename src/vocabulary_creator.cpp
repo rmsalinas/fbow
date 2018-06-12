@@ -9,14 +9,14 @@ inline int omp_get_thread_num(){return 0;}
 using namespace std;
 namespace fbow{
 
-void VocabularyCreator::create(fbow::Vocabulary &Voc, const  cv::Mat  &features, const std::string &desc_name, Params params)throw(std::exception)
+void VocabularyCreator::create(fbow::Vocabulary &Voc, const  cv::Mat  &features, const std::string &desc_name, Params params)
 {
     std::vector<cv::Mat> vfeatures(1);
     vfeatures[0]=features;
     create(Voc,vfeatures,desc_name,params);
 }
 
-void VocabularyCreator::create(fbow::Vocabulary &Voc, const std::vector<cv::Mat> &features, const string &desc_name, Params params)throw(std::exception){
+void VocabularyCreator::create(fbow::Vocabulary &Voc, const std::vector<cv::Mat> &features, const string &desc_name, Params params){
     assert(features.size()>0);
     assert(features[0].cols>0);
     //select the funciton

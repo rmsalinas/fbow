@@ -38,8 +38,8 @@ public:
     //k braching factor
     //L maximum tree depth
 
-    void create(fbow::Vocabulary &Voc, const std::vector<cv::Mat> &features, const std::string &desc_name, Params params)throw(std::exception);
-    void create(fbow::Vocabulary &Voc, const cv::Mat &features, const std::string &desc_name, Params params)throw(std::exception);
+    void create(fbow::Vocabulary &Voc, const std::vector<cv::Mat> &features, const std::string &desc_name, Params params);
+    void create(fbow::Vocabulary &Voc, const cv::Mat &features, const std::string &desc_name, Params params);
 private:
     Params _params;
     struct feature_info{
