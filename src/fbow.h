@@ -6,6 +6,9 @@
 #include <map>
 #include <memory>
 #include <bitset>
+#ifndef __ANDROID__
+#include <immintrin.h>
+#endif
 #include "cpu.h"
 namespace fbow{
 
