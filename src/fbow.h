@@ -40,8 +40,57 @@ struct fBow:std::map<uint32_t,_float>{
 
     //returns a hash identifying this
     uint64_t hash()const;
+public:
     //returns the similitude score between to image descriptors using L2 norm
-    static double score(const fBow &v1, const fBow &v2);
+    double score(const fBow &v1, const fBow &v2) {
+
+
+        fBow::const_iterator v1_it, v2_it;
+        const fBow::const_iterator v1_end = v1.end();
+        const fBow::const_iterator v2_end = v2.end();
+
+        v1_it = v1.begin();
+        v2_it = v2.begin();
+
+        double score = 0;
+
+        while (v1_it != v1_end && v2_it != v2_end)
+        {
+            const auto& vi = v1_it->second;
+            const auto& wi = v2_it->second;
+
+            if (v1_it->first == v2_it->first)
+            {
+                score += vi * wi;
+
+                // move v1 and v2 forward
+                ++v1_it;
+                ++v2_it;
+            }
+            else if (v1_it->first < v2_it->first)
+            {
+                // move v1 forward
+                v1_it = v1.lower_bound(v2_it->first);
+                // v1_it = (first element >= v2_it.id)
+            }
+            else
+            {
+                // move v2 forward
+                v2_it = v2.lower_bound(v1_it->first);
+                // v2_it = (first element >= v1_it.id)
+            }
+        }
+
+        // ||v - w||_{L2} = sqrt( 2 - 2 * Sum(v_i * w_i) )
+        //		for all i | v_i != 0 and w_i != 0 )
+        // (Nister, 2006)
+        if (score >= 1) // rounding errors
+            score = 1.0;
+        else
+        score = 1.0 - sqrt(1.0 - score); // [0..1]
+
+        return score;
+    }
 
 };
 

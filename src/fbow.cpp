@@ -142,22 +142,22 @@ void Vocabulary::saveToFile(const std::string &filepath)throw(std::exception){
 ///save/load to binary streams
 void Vocabulary::toStream(std::ostream &str)const{
     //magic number
-    uint64_t sig=55824124;
+    int sig=55824124;
     str.write((char*)&sig,sizeof(sig));
     //save string
     str.write((char*)&_params,sizeof(params));
     str.write(_data,_params._total_size);
+    
 }
 
 void Vocabulary::fromStream(std::istream &str)throw(std::exception)
 {
     if (_data!=0) free (_data);
-    uint64_t sig;
+    int sig;
     str.read((char*)&sig,sizeof(sig));
     if (sig!=55824124) throw std::runtime_error("Vocabulary::fromStream invalid signature");
     //read string
     str.read((char*)&_params,sizeof(params));
-    
 #if _WIN32
     _data = (char*)_aligned_malloc(_params._total_size, _params._aligment);
 #else
@@ -166,57 +166,59 @@ void Vocabulary::fromStream(std::istream &str)throw(std::exception)
 
     if (_data==0) throw std::runtime_error("Vocabulary::fromStream Could not allocate data");
     str.read(_data,_params._total_size);
+    
 }
 
-double fBow::score(const  fBow &v1,const fBow &v2){
+//double fBow::score(const fBow &v1,const fBow &v2){
+//
+//
+//    fBow::const_iterator v1_it, v2_it;
+//    const fBow::const_iterator v1_end = v1.end();
+//    const fBow::const_iterator v2_end = v2.end();
+//
+//    v1_it = v1.begin();
+//    v2_it = v2.begin();
+//
+//    double score = 0;
+//
+//    while(v1_it != v1_end && v2_it != v2_end)
+//    {
+//        const auto& vi = v1_it->second;
+//        const auto& wi = v2_it->second;
+//
+//        if(v1_it->first == v2_it->first)
+//        {
+//            score += vi * wi;
+//
+//            // move v1 and v2 forward
+//            ++v1_it;
+//            ++v2_it;
+//        }
+//        else if(v1_it->first < v2_it->first)
+//        {
+//            // move v1 forward
+//            v1_it = v1.lower_bound(v2_it->first);
+//            // v1_it = (first element >= v2_it.id)
+//        }
+//        else
+//        {
+//            // move v2 forward
+//            v2_it = v2.lower_bound(v1_it->first);
+//            // v2_it = (first element >= v1_it.id)
+//        }
+//    }
+//
+//    // ||v - w||_{L2} = sqrt( 2 - 2 * Sum(v_i * w_i) )
+//    //		for all i | v_i != 0 and w_i != 0 )
+//    // (Nister, 2006)
+//    if(score >= 1) // rounding errors
+//        score = 1.0;
+//    else
+//        score = 1.0 - sqrt(1.0 - score); // [0..1]
+//
+//    return score;
+//}
 
-
-    fBow::const_iterator v1_it, v2_it;
-    const fBow::const_iterator v1_end = v1.end();
-    const fBow::const_iterator v2_end = v2.end();
-
-    v1_it = v1.begin();
-    v2_it = v2.begin();
-
-    double score = 0;
-
-    while(v1_it != v1_end && v2_it != v2_end)
-    {
-        const auto& vi = v1_it->second;
-        const auto& wi = v2_it->second;
-
-        if(v1_it->first == v2_it->first)
-        {
-            score += vi * wi;
-
-            // move v1 and v2 forward
-            ++v1_it;
-            ++v2_it;
-        }
-        else if(v1_it->first < v2_it->first)
-        {
-            // move v1 forward
-            v1_it = v1.lower_bound(v2_it->first);
-            // v1_it = (first element >= v2_it.id)
-        }
-        else
-        {
-            // move v2 forward
-            v2_it = v2.lower_bound(v1_it->first);
-            // v2_it = (first element >= v1_it.id)
-        }
-    }
-
-    // ||v - w||_{L2} = sqrt( 2 - 2 * Sum(v_i * w_i) )
-    //		for all i | v_i != 0 and w_i != 0 )
-    // (Nister, 2006)
-    if(score >= 1) // rounding errors
-        score = 1.0;
-    else
-        score = 1.0 - sqrt(1.0 - score); // [0..1]
-
-    return score;
-}
 uint64_t fBow::hash()const{
     uint64_t seed = 0;
     for(auto e:*this)
