@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <filesystem>
 #include "fbow.h"
 
 // OpenCV
@@ -132,6 +133,19 @@ void saveToYMLFile(string filename, const vector<cv::Mat> &features, string  des
 }
 
 // ----------------------------------------------------------------------------
+vector<string> ListFilenames(string dbPath)
+{
+    namespace fs = std::experimental::filesystem;
+    vector<string> filenames;
+    for (auto & p : fs::directory_iterator(dbPath))
+    {
+        stringstream str;
+        str << p;
+        filenames.push_back(str.str());
+
+    }
+    return filenames;
+}
 
 int main(int argc,char **argv)
 {
@@ -146,7 +160,8 @@ int main(int argc,char **argv)
         string descriptor=argv[1];
         string output=argv[2];
 
-        auto images=readImagePaths(argc,argv,3);
+        auto images = ListFilenames(argv[3]);
+        //auto images=readImagePaths(argc,argv,3);
         vector< cv::Mat   >   features= loadFeatures(images,descriptor);
 
         //save features to file

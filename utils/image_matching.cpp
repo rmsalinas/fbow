@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-
+#include <filesystem>
 //
 #include "vocabulary_creator.h"
 // OpenCV
@@ -62,13 +62,16 @@ vector<cv::Mat> readFeaturesFromYMLFile(string filename, std::string &desc_name)
 }
 
 // ----------------------------------------------------------------------------
-void ImageMatching(vector<cv::Mat> &features, Vocabulary &voc, vector<map<double, int> > &scores, vector<string> &filenames, string outDir)
+void ImageMatching(vector<cv::Mat> &features, Vocabulary &voc, vector<map<double, int> > &scores, vector<string> &filenames, string outDir, string MatchMatrixFile)
 {
 
     fbow::fBow vv, vv2;
     int avgScore = 0;
     int counter = 0;
     auto t_start = std::chrono::high_resolution_clock::now();
+    ofstream fstr(MatchMatrixFile);
+    if (fstr.is_open() == false) {std::cerr << " error openning file : " << MatchMatrixFile << endl;}
+    stringstream sstr;
     for (int i = 0; i<features.size(); ++i)
     {
         vv = voc.transform(features[i]);
@@ -83,11 +86,12 @@ void ImageMatching(vector<cv::Mat> &features, Vocabulary &voc, vector<map<double
             {
                 score.insert(pair<double, int>(score1, j));
             }
-            printf("%f, ", score1);
+            fstr << score1 << "\t";
         }
-        printf("\n");
+        fstr << endl;
         scores.push_back(score);
     }
+    fstr.close();
     auto t_end = std::chrono::high_resolution_clock::now();
     avgScore += double(std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count());
 
@@ -149,6 +153,21 @@ void ImageMatching(vector<cv::Mat> &features, Vocabulary &voc, vector<map<double
     */
 }
 
+// ----------------------------------------------------------------------------
+vector<string> ListFilenames(string dbPath)
+{
+    namespace fs = std::experimental::filesystem;
+    vector<string> filenames;
+    for (auto & p : fs::directory_iterator(dbPath))
+    {
+        stringstream str;
+        str << p;
+        filenames.push_back(str.str());
+
+    }
+    return filenames;
+}
+
 int main(int argc, char **argv)
 {
 
@@ -161,8 +180,14 @@ int main(int argc, char **argv)
 
 
         string desc_name;
-        auto features = readFeaturesFromYMLFile(argv[1], desc_name);
+        string outDir = argv[3];
+        string DBDir = argv[4];
+        string MatchMatrixFile = argv[5];
+        vector<string> filenames;
 
+        filenames = ListFilenames(DBDir);
+
+        auto features = readFeaturesFromYMLFile(argv[1], desc_name);
         cout << "DescName=" << desc_name << endl;
         const int k = stoi(cml("-k", "10"));
         const int L = stoi(cml("-l", "6"));
@@ -179,15 +204,8 @@ int main(int argc, char **argv)
         cerr << "Saving " << argv[2] << endl;
         voc.saveToFile(argv[2]);
 
-        vector<string> filenames;
-        string outDir = argv[3];
-        for (int i = 4; i < argc; ++i)
-        {
-            filenames.push_back(argv[i]);
-        }
-
         vector<map<double, int> > scores;
-        ImageMatching(features, voc, scores, filenames, outDir);
+        ImageMatching(features, voc, scores, filenames, outDir, MatchMatrixFile);
 
     }
     catch (std::exception &ex) {
