@@ -24,17 +24,23 @@ MKDIRCMD = "mkdir " + OUTPUT
 MatchMatrixFile = OUTPUT + "\\" + "MatchingMatrix.txt"
 
 #---------------Commands--------------------
-FeaturesExtractCmd = CODEDIR + "\\" + "fbow_create_voc_step0" + Extension + " " + DESCRIPTOR + " " + OUTPUT + "\\features.yml " + DBDIR
-VocabCreateCmd = CODEDIR + "\\" + "fbow_create_voc_step1" + Extension + " " + OUTPUT + "\\features.yml " + OUTPUT + "\\out.fbow"
-ImageMatchingCmd = CODEDIR + "\\" + "image_matching" + Extension + " " + OUTPUT + "\\features.yml " + OUTPUT + "\\out.fbow " + OUTPUT + " " + DBDIR + " " + MatchMatrixFile
+FeaturesExtractCmd = CODEDIR + "\\" + "fbow_create_voc_step0" + Extension + " " + DESCRIPTOR + " " + OUTPUT + "\\features " + DBDIR
+VocabCreateCmd = CODEDIR + "\\" + "fbow_create_voc_step1" + Extension + " " + OUTPUT + "\\features " + OUTPUT + "\\out.fbow"
+#ImageMatchingCmd = CODEDIR + "\\" + "image_matching" + Extension + " " + OUTPUT + "\\features " + OUTPUT + "\\out.fbow " + OUTPUT + " " + DBDIR + " " + MatchMatrixFile
+ImageMatchingCmd = CODEDIR + "\\" + "image_matching" + Extension + " " + DESCRIPTOR + " " + DBDIR + " " + MatchMatrixFile + " " + OUTPUT
 
 #---------------Run Commands----------------
 print("cd " + RESULTSDIR + " " + ENDCMD + " " + "mkdir " + DESCRIPTOR + DBNAME)
+print("\n")
 os.system("cd " + RESULTSDIR + " " + ENDCMD + " " + "mkdir " + DESCRIPTOR + DBNAME)
-print(FeaturesExtractCmd)
-result = subprocess.check_output(FeaturesExtractCmd, shell=True)
-print(result)
+print("\n")
+
+# print(FeaturesExtractCmd)
+# print("\n")
+# os.system(FeaturesExtractCmd)
+# print("\n")
 
 print(ImageMatchingCmd)
-result = subprocess.check_output(ImageMatchingCmd, shell=True)
-print(result)
+print("\n")
+os.system(ImageMatchingCmd)
+print("\n")

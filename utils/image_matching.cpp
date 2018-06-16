@@ -3,6 +3,14 @@
 #include <vector>
 #include <filesystem>
 //
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/features2d/features2d.hpp>
+#ifdef USE_CONTRIB
+#include <opencv2/xfeatures2d/nonfree.hpp>
+#include <opencv2/xfeatures2d.hpp>
+#endif
+
 #include "vocabulary_creator.h"
 // OpenCV
 #include <opencv2/core/core.hpp>
@@ -19,7 +27,7 @@ vector<cv::Mat> readFeaturesFromFile(string filename, std::string &desc_name) {
     //test it is not created
     std::ifstream ifile(filename);
     if (!ifile.is_open()) { cerr << "could not open input file" << endl; exit(0); }
-
+    
 
     char _desc_name[20];
     ifile.read(_desc_name, 20);
@@ -27,9 +35,12 @@ vector<cv::Mat> readFeaturesFromFile(string filename, std::string &desc_name) {
 
     uint32_t size;
     ifile.read((char*)&size, sizeof(size));
+    ifile.close();
     features.resize(size);
     for (size_t i = 0; i<size; i++) {
-
+        stringstream str;
+        str << i++;
+        std::ifstream ifile(filename + str.str());
         uint32_t cols, rows, type;
         ifile.read((char*)&cols, sizeof(cols));
         ifile.read((char*)&rows, sizeof(rows));
@@ -37,6 +48,7 @@ vector<cv::Mat> readFeaturesFromFile(string filename, std::string &desc_name) {
         ifile.read((char*)&type, sizeof(type));
         features[i].create(rows, cols, type);
         ifile.read((char*)features[i].ptr<uchar>(0), features[i].total()*features[i].elemSize());
+        ifile.close();
     }
     return features;
 }
@@ -167,7 +179,40 @@ vector<string> ListFilenames(string dbPath)
     }
     return filenames;
 }
+//-------------------------------------------------------------------------------
+vector< cv::Mat  >  loadFeatures(vector<string> path_to_images, string descriptor = "") throw (exception) {
+    //select detector
+    cv::Ptr<cv::Feature2D> fdetector;
+    if (descriptor == "orb")        fdetector = cv::ORB::create(2000);
+    else if (descriptor == "brisk") fdetector = cv::BRISK::create();
+#ifdef OPENCV_VERSION_3
+    else if (descriptor == "akaze") fdetector = cv::AKAZE::create(cv::AKAZE::DESCRIPTOR_MLDB, 0, 3, 1e-4);
+#endif
+#ifdef USE_CONTRIB
+    else if (descriptor == "surf")  fdetector = cv::xfeatures2d::SURF::create(15, 4, 2);
+#endif
 
+    else throw runtime_error("Invalid descriptor");
+    assert(!descriptor.empty());
+    vector<cv::Mat>    features;
+
+
+    cout << "Extracting   features..." << endl;
+    for (size_t i = 0; i < path_to_images.size(); ++i)
+    {
+        vector<cv::KeyPoint> keypoints;
+        cv::Mat descriptors;
+        cout << "reading image: " << path_to_images[i] << endl;
+        cv::Mat image = cv::imread(path_to_images[i], 0);
+        if (image.empty())throw runtime_error("Could not open image" + path_to_images[i]);
+        cout << "extracting features" << endl;
+        fdetector->detectAndCompute(image, cv::Mat(), keypoints, descriptors);
+        cout << path_to_images[i] << " : " << descriptors.rows << endl;
+        features.push_back(descriptors);
+        cout << "done detecting features" << endl;
+    }
+    return features;
+}
 int main(int argc, char **argv)
 {
 
@@ -179,33 +224,48 @@ int main(int argc, char **argv)
         }
 
 
-        string desc_name;
-        string outDir = argv[3];
-        string DBDir = argv[4];
-        string MatchMatrixFile = argv[5];
-        vector<string> filenames;
+        //string desc_name;
+        //string outDir = argv[3];
+        //string DBDir = argv[4];
+        //string MatchMatrixFile = argv[5];
+        //vector<string> filenames;
 
-        filenames = ListFilenames(DBDir);
+        //filenames = ListFilenames(DBDir);
 
-        auto features = readFeaturesFromYMLFile(argv[1], desc_name);
-        cout << "DescName=" << desc_name << endl;
+        ////auto features = readFeaturesFromYMLFile(argv[1], desc_name);
+        //auto features = readFeaturesFromFile(argv[1], desc_name);
+        //cout << "DescName=" << desc_name << endl;
+        //const int k = stoi(cml("-k", "10"));
+        //const int L = stoi(cml("-l", "6"));
+        //const int nThreads = stoi(cml("-t", "1"));
+        //srand(0);
+        //fbow::VocabularyCreator voc_creator;
+        //fbow::Vocabulary voc;
+        //cout << "Creating a " << k << "^" << L << " vocabulary..." << endl;
+        //auto t_start = std::chrono::high_resolution_clock::now();
+        //voc_creator.create(voc, features, desc_name, fbow::VocabularyCreator::Params(k, L, nThreads));
+        //auto t_end = std::chrono::high_resolution_clock::now();
+        //cout << "time=" << double(std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count()) << " msecs" << endl;
+        //cout << "vocabulary size : " << voc.size() << endl;
+        //cerr << "Saving " << argv[2] << endl;
+        //voc.saveToFile(argv[2]);
+
+        //akaze DBadress Matrix output
+        string descriptor = argv[1];
+        string MatchMatrixFile = argv[3];
+        string outDir = argv[4];
+        fbow::Vocabulary voc;
+        fbow::VocabularyCreator voc_creator;
         const int k = stoi(cml("-k", "10"));
         const int L = stoi(cml("-l", "6"));
         const int nThreads = stoi(cml("-t", "1"));
-        srand(0);
-        fbow::VocabularyCreator voc_creator;
-        fbow::Vocabulary voc;
-        cout << "Creating a " << k << "^" << L << " vocabulary..." << endl;
-        auto t_start = std::chrono::high_resolution_clock::now();
-        voc_creator.create(voc, features, desc_name, fbow::VocabularyCreator::Params(k, L, nThreads));
-        auto t_end = std::chrono::high_resolution_clock::now();
-        cout << "time=" << double(std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count()) << " msecs" << endl;
-        cout << "vocabulary size : " << voc.size() << endl;
-        cerr << "Saving " << argv[2] << endl;
-        voc.saveToFile(argv[2]);
 
+        auto images = ListFilenames(argv[2]);
+        //auto images=readImagePaths(argc,argv,3);
+        vector< cv::Mat   >   features = loadFeatures(images, descriptor);
+        voc_creator.create(voc, features, descriptor, fbow::VocabularyCreator::Params(k, L, nThreads));
         vector<map<double, int> > scores;
-        ImageMatching(features, voc, scores, filenames, outDir, MatchMatrixFile);
+        ImageMatching(features, voc, scores, images, outDir, MatchMatrixFile);
 
     }
     catch (std::exception &ex) {
