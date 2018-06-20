@@ -80,8 +80,10 @@ void saveToFile(string filename, const vector<cv::Mat> &features, string  desc_n
         fstream ifile(filename);
         if (ifile.is_open())//read size and rewrite
             runtime_error("ERROR::: Output File " + filename + " already exists!!!!!");
+        ifile.close();
     }
-    ofstream ofile(filename);
+
+    ofstream ofile(filename, ios_base::binary);
     if (!ofile.is_open()) { cerr << "could not open output file" << endl; exit(0); }
 
     char _desc_name[20];
@@ -91,16 +93,23 @@ void saveToFile(string filename, const vector<cv::Mat> &features, string  desc_n
 
     uint32_t size = features.size();
     ofile.write((char*)&size, sizeof(size));
+    ofile.close();
+
     int i = 0;
     for (auto &f : features) {
+        stringstream str;
+        str << i;
+        ofstream ffile(filename + str.str(), ios_base::binary);
         if (!f.isContinuous()) {
             cerr << "Matrices should be continuous" << endl; exit(0);
         }
-        uint32_t aux = f.cols; ofile.write((char*)&aux, sizeof(aux));
-        cout << "i : " << i++ << "rows : " << f.rows << endl;
-        aux = f.rows; ofile.write((char*)&aux, sizeof(aux));
-        aux = f.type(); ofile.write((char*)&aux, sizeof(aux));
-        ofile.write((char*)f.ptr<uchar>(0), f.total()*f.elemSize());
+        uint32_t aux = f.cols; ffile.write((char*)&aux, sizeof(aux));
+        aux = f.rows; ffile.write((char*)&aux, sizeof(aux));
+        aux = f.type(); ffile.write((char*)&aux, sizeof(aux));
+        ffile.write((char*)f.data, f.total()*f.elemSize());
+
+        ffile.close();
+        i++;
     }
 }
 
@@ -165,8 +174,8 @@ int main(int argc,char **argv)
         vector< cv::Mat   >   features= loadFeatures(images,descriptor);
 
         //save features to file
-        saveToYMLFile(argv[2],features,descriptor);
-
+        //saveToYMLFile(argv[2],features,descriptor);
+        saveToFile(argv[2], features, descriptor);
     }catch(exception &ex){
         cerr<<ex.what()<<endl;
     }

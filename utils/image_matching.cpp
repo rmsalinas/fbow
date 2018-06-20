@@ -25,7 +25,7 @@ class CmdLineParser { int argc; char **argv; public: CmdLineParser(int _argc, ch
 vector<cv::Mat> readFeaturesFromFile(string filename, std::string &desc_name) {
     vector<cv::Mat> features;
     //test it is not created
-    std::ifstream ifile(filename);
+    std::ifstream ifile(filename, ios_base::binary);
     if (!ifile.is_open()) { cerr << "could not open input file" << endl; exit(0); }
     
 
@@ -37,17 +37,20 @@ vector<cv::Mat> readFeaturesFromFile(string filename, std::string &desc_name) {
     ifile.read((char*)&size, sizeof(size));
     ifile.close();
     features.resize(size);
+    vector<vector<char> > tmp;
+    tmp.resize(size);
     for (size_t i = 0; i<size; i++) {
         stringstream str;
-        str << i++;
-        std::ifstream ifile(filename + str.str());
+        str << i;
+        string fname = filename + str.str();
+        std::ifstream ifile(fname, ios_base::binary);
         uint32_t cols, rows, type;
         ifile.read((char*)&cols, sizeof(cols));
         ifile.read((char*)&rows, sizeof(rows));
-        std::cout << " i : " << i << " rows : " << rows << std::endl;
         ifile.read((char*)&type, sizeof(type));
+        features[i].release();
         features[i].create(rows, cols, type);
-        ifile.read((char*)features[i].ptr<uchar>(0), features[i].total()*features[i].elemSize());
+        ifile.read((char*)features[i].data, features[i].total() * features[i].elemSize());
         ifile.close();
     }
     return features;
@@ -213,6 +216,49 @@ vector< cv::Mat  >  loadFeatures(vector<string> path_to_images, string descripto
     }
     return features;
 }
+
+// ----------------------------------------------------------------------------
+void saveToFile(string filename, const vector<cv::Mat> &features, string  desc_name, bool rewrite = true)throw (exception) {
+    
+    //test it is not created
+    if (!rewrite) {
+        fstream ifile(filename);
+        if (ifile.is_open())//read size and rewrite
+            runtime_error("ERROR::: Output File " + filename + " already exists!!!!!");
+        ifile.close();
+    }
+
+    ofstream ofile(filename, ios_base::binary);
+    if (!ofile.is_open()) { cerr << "could not open output file" << endl; exit(0); }
+
+    char _desc_name[20];
+    desc_name.resize(min(size_t(19), desc_name.size()));
+    strcpy(_desc_name, desc_name.c_str());
+    ofile.write(_desc_name, 20);
+
+    uint32_t size = features.size();
+    ofile.write((char*)&size, sizeof(size));
+    ofile.close();
+    
+    int i = 0;
+    for (auto &f : features) {
+        stringstream str;
+        str << i;
+        ofstream ffile(filename + str.str(), ios_base::binary);
+        if (!f.isContinuous()) {
+            cerr << "Matrices should be continuous" << endl; exit(0);
+        }
+        uint32_t aux = f.cols; ffile.write((char*)&aux, sizeof(aux));
+        aux = f.rows; ffile.write((char*)&aux, sizeof(aux));
+        aux = f.type(); ffile.write((char*)&aux, sizeof(aux));
+        ffile.write((char*)f.data, f.total()*f.elemSize());
+
+        ffile.close();
+        i++;
+    }
+}
+
+
 int main(int argc, char **argv)
 {
 
@@ -251,9 +297,9 @@ int main(int argc, char **argv)
         //voc.saveToFile(argv[2]);
 
         //akaze DBadress Matrix output
-        string descriptor = argv[1];
-        string MatchMatrixFile = argv[3];
-        string outDir = argv[4];
+        string descriptor;
+        string outDir = argv[3];
+        string MatchMatrixFile = argv[4];
         fbow::Vocabulary voc;
         fbow::VocabularyCreator voc_creator;
         const int k = stoi(cml("-k", "10"));
@@ -262,10 +308,14 @@ int main(int argc, char **argv)
 
         auto images = ListFilenames(argv[2]);
         //auto images=readImagePaths(argc,argv,3);
-        vector< cv::Mat   >   features = loadFeatures(images, descriptor);
+        //vector<cv::Mat>   features = loadFeatures(images, descriptor);
+        //saveToFile(argv[2], features, descriptor);
+        vector<cv::Mat>   features = readFeaturesFromFile(argv[1], descriptor);
+
         voc_creator.create(voc, features, descriptor, fbow::VocabularyCreator::Params(k, L, nThreads));
         vector<map<double, int> > scores;
         ImageMatching(features, voc, scores, images, outDir, MatchMatrixFile);
+        
 
     }
     catch (std::exception &ex) {

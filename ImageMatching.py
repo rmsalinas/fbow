@@ -26,8 +26,7 @@ MatchMatrixFile = OUTPUT + "\\" + "MatchingMatrix.txt"
 #---------------Commands--------------------
 FeaturesExtractCmd = CODEDIR + "\\" + "fbow_create_voc_step0" + Extension + " " + DESCRIPTOR + " " + OUTPUT + "\\features " + DBDIR
 VocabCreateCmd = CODEDIR + "\\" + "fbow_create_voc_step1" + Extension + " " + OUTPUT + "\\features " + OUTPUT + "\\out.fbow"
-#ImageMatchingCmd = CODEDIR + "\\" + "image_matching" + Extension + " " + OUTPUT + "\\features " + OUTPUT + "\\out.fbow " + OUTPUT + " " + DBDIR + " " + MatchMatrixFile
-ImageMatchingCmd = CODEDIR + "\\" + "image_matching" + Extension + " " + DESCRIPTOR + " " + DBDIR + " " + MatchMatrixFile + " " + OUTPUT
+ImageMatchingCmd = CODEDIR + "\\" + "image_matching" + Extension + " " + OUTPUT + "\\features " + DBDIR + " " + MatchMatrixFile + " " + OUTPUT
 
 #---------------Run Commands----------------
 print("cd " + RESULTSDIR + " " + ENDCMD + " " + "mkdir " + DESCRIPTOR + DBNAME)
@@ -35,10 +34,10 @@ print("\n")
 os.system("cd " + RESULTSDIR + " " + ENDCMD + " " + "mkdir " + DESCRIPTOR + DBNAME)
 print("\n")
 
-# print(FeaturesExtractCmd)
-# print("\n")
-# os.system(FeaturesExtractCmd)
-# print("\n")
+print(FeaturesExtractCmd)
+print("\n")
+os.system(FeaturesExtractCmd)
+print("\n")
 
 print(ImageMatchingCmd)
 print("\n")
