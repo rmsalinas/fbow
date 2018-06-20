@@ -298,8 +298,8 @@ int main(int argc, char **argv)
 
         //akaze DBadress Matrix output
         string descriptor;
-        string outDir = argv[3];
-        string MatchMatrixFile = argv[4];
+        string MatchMatrixFile = argv[3];
+        string outDir = argv[4];
         fbow::Vocabulary voc;
         fbow::VocabularyCreator voc_creator;
         const int k = stoi(cml("-k", "10"));
