@@ -53,6 +53,46 @@ void Vocabulary::setParams(int aligment, int k, int desc_type, int desc_size, in
 
 }
 
+void Vocabulary::transform(const cv::Mat &features, int level,fBow &result,fBow2&result2){
+    if (features.rows==0) throw std::runtime_error("Vocabulary::transform No input data");
+    if (features.type()!=_params._desc_type) throw std::runtime_error("Vocabulary::transform features are of different type than vocabulary");
+    if (features.cols *  features.elemSize() !=size_t(_params._desc_size)) throw std::runtime_error("Vocabulary::transform features are of different size than the vocabulary ones");
+
+    //get host info to decide the version to execute
+    if (!cpu_info){
+        cpu_info=std::make_shared<cpu>();
+        cpu_info->detect_host();
+    }
+     //decide the version to employ according to the type of features, aligment and cpu capabilities
+    if (_params._desc_type==CV_8UC1){
+        //orb
+        if (cpu_info->HW_x64){
+            if (_params._desc_size==32)
+                 _transform2<L1_32bytes>(features,level,result,result2);
+            //full akaze
+            else if( _params._desc_size==61 && _params._aligment%8==0)
+                _transform2<L1_61bytes>(features,level,result,result2);
+            //generic
+            else
+                _transform2<L1_x64>(features,level,result,result2);
+        }
+        else  _transform2<L1_x32>(features,level,result,result2);
+    }
+    else if(features.type()==CV_32FC1){
+        if( cpu_info->isSafeAVX() && _params._aligment%32==0){ //AVX version
+            if ( _params._desc_size==256)  _transform2<L2_avx_8w>(features,level,result,result2);//specific for surf 256 bytes
+            else  _transform2<L2_avx_generic>(features,level,result,result2);//any other
+        }
+        if( cpu_info->isSafeSSE() && _params._aligment%16==0){//SSE version
+            if ( _params._desc_size==256) _transform2<L2_sse3_16w>(features,level,result,result2);//specific for surf 256 bytes
+            else _transform2<L2_se3_generic>(features,level,result,result2);//any other
+        }
+        //generic version
+        _transform2<L2_generic>(features,level,result,result2);
+    }
+    else throw std::runtime_error("Vocabulary::transform invalid feature type. Should be CV_8UC1 or CV_32FC1");
+
+}
 
 fBow Vocabulary::transform(const cv::Mat &features)
 {
@@ -71,13 +111,13 @@ fBow Vocabulary::transform(const cv::Mat &features)
         //orb
         if (cpu_info->HW_x64){
             if (_params._desc_size==32)
-				result=_transform<L1_32bytes>(features);
+                result=_transform<L1_32bytes>(features);
             //full akaze
             else if( _params._desc_size==61 && _params._aligment%8==0)
-				result=_transform<L1_61bytes>(features);
+                result=_transform<L1_61bytes>(features);
             //generic
             else
-				result=_transform<L1_x64>(features );
+                result=_transform<L1_x64>(features );
         }
         else  result=  _transform<L1_x32>(features );
     }
@@ -107,7 +147,6 @@ fBow Vocabulary::transform(const cv::Mat &features)
     }
     return result;
 }
-
 
 
 
@@ -226,4 +265,65 @@ uint64_t Vocabulary::hash()const{
         seed^= _data[i] + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     return seed;
 }
+void fBow::toStream(std::ostream &str) const   {
+    uint32_t _size=size();
+    str.write((char*)&_size,sizeof(_size));
+    for(const auto & e:*this)
+        str.write((char*)&e,sizeof(e));
+}
+void fBow::fromStream(std::istream &str)    {
+    clear();
+    uint32_t _size;
+    str.read((char*)&_size,sizeof(_size));
+    for(uint32_t i=0;i<_size;i++){
+        std::pair<uint32_t,_float> e;
+        str.read((char*)&e,sizeof(e));
+        insert(e);
+    }
+}
+
+void fBow2::toStream(std::ostream &str) const   {
+    uint32_t _size=size();
+    str.write((char*)&_size,sizeof(_size));
+    for(const auto &e:*this){
+        str.write((char*)&e.first,sizeof(e.first));
+        //now the vector
+        _size=e.second.size();
+        str.write((char*)&_size,sizeof(_size));
+        str.write((char*)&e.second[0],sizeof(e.second[0])*e.second.size());
+    }
+}
+
+void fBow2::fromStream(std::istream &str)    {
+    uint32_t _sizeMap,_sizeVec;
+    std::vector<uint32_t> vec;
+    uint32_t key;
+
+    clear();
+    str.read((char*)&_sizeMap,sizeof(_sizeMap));
+    for(uint32_t i=0;i<_sizeMap;i++){
+        str.read((char*)&key,sizeof(key));
+        str.read((char*)&_sizeVec,sizeof(_sizeVec));//vector size
+        vec.resize(_sizeVec);
+        str.read((char*)&vec[0],sizeof(vec[0])*_sizeVec);
+        insert({key,vec});
+    }
+}
+
+uint64_t fBow2::hash()const{
+
+
+    uint64_t seed = 0;
+
+
+    for(const auto &e:*this){
+        seed^= e.first + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        for(const auto &idx:e.second)
+            seed^= idx + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    }
+
+    return seed;
+
+}
+
 }

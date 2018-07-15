@@ -24,22 +24,8 @@ struct FBOW_API _float{
  */
 struct FBOW_API fBow:std::map<uint32_t,_float>{
 
-    void toStream(std::ostream &str) const   {
-        uint32_t _size=size();
-        str.write((char*)&_size,sizeof(_size));
-        for(std::pair<uint32_t,_float> e:*this)
-            str.write((char*)&e,sizeof(e));
-    }
-    void fromStream(std::istream &str)    {
-        clear();
-        uint32_t _size;
-        str.read((char*)&_size,sizeof(_size));
-        for(uint32_t i=0;i<_size;i++){
-            std::pair<uint32_t,_float> e;
-            str.read((char*)&e,sizeof(e));
-            insert(e);
-        }
-    }
+    void toStream(std::ostream &str) const  ;
+    void fromStream(std::istream &str)    ;
 
     //returns a hash identifying this
     uint64_t hash()const;
@@ -49,6 +35,19 @@ struct FBOW_API fBow:std::map<uint32_t,_float>{
 };
 
 
+//Bag of words with augmented information. For each word, keeps information about the indices of the elements that have been classified into the word
+//it is computed at the desired level
+struct FBOW_API fBow2:std::map<uint32_t,std::vector<uint32_t>> {
+
+    void toStream(std::ostream &str) const   ;
+
+    void fromStream(std::istream &str)    ;
+
+    //returns a hash identifying this
+    uint64_t hash()const;
+
+
+};
 
 /**Main class to represent a vocabulary of visual words
  */
@@ -86,6 +85,7 @@ class FBOW_API Vocabulary
 
     //transform the features stored as rows in the returned BagOfWords
     fBow transform(const cv::Mat &features);
+    void transform(const cv::Mat &features, int level,fBow &result,fBow2&result2);
 
 
     //loads/saves from a file
@@ -358,38 +358,84 @@ private:
      };
 
 
-    template<typename Computer>
-    fBow _transform(const cv::Mat &features){
-        Computer comp;
-        comp.setParams(_params._desc_size,_params._desc_size_bytes_wp);
-        using DType=typename Computer::DType;//distance type
-        using TData=typename Computer::TData;//data type
+     template<typename Computer>
+     fBow  _transform(const cv::Mat &features){
+         Computer comp;
+         comp.setParams(_params._desc_size,_params._desc_size_bytes_wp);
+         using DType=typename Computer::DType;//distance type
+         using TData=typename Computer::TData;//data type
 
-        fBow result;
-        std::pair<DType,uint32_t> best_dist_idx(std::numeric_limits<uint32_t>::max(),0);//minimum distance found
-        block_node_info *bn_info;
-        for(int cur_feature=0;cur_feature<features.rows;cur_feature++){
-            comp.startwithfeature(features.ptr<TData>(cur_feature));
-            //ensure feature is in a
-            Block c_block=getBlock(0);
-              //copy to another structure and add padding with zeros
-            do{
-                //given the current block, finds the node with minimum distance
-                best_dist_idx.first=std::numeric_limits<uint32_t>::max();
-                for(int cur_node=0;cur_node<c_block.getN();cur_node++)
-                {
-                    DType d= comp.computeDist(c_block.getFeature<TData>(cur_node));
-                    if (d<best_dist_idx.first) best_dist_idx=std::make_pair(d,cur_node);
-                }
-                bn_info=c_block.getBlockNodeInfo(best_dist_idx.second);
-                //if the node is leaf get word id and weight,else go to its children
-                if ( bn_info->isleaf())
-                    result[bn_info->getId()]+=bn_info->weight;//if the node is leaf get word id and weight
-                else setBlock(bn_info->getId(),c_block);//go to its children
-            }while( !bn_info->isleaf() && bn_info->getId()!=0);
-        }
-        return result;
-    }
+         fBow  result;
+         std::pair<DType,uint32_t> best_dist_idx(std::numeric_limits<uint32_t>::max(),0);//minimum distance found
+         block_node_info *bn_info;
+         for(int cur_feature=0;cur_feature<features.rows;cur_feature++){
+             comp.startwithfeature(features.ptr<TData>(cur_feature));
+             //ensure feature is in a
+             Block c_block=getBlock(0);
+               //copy to another structure and add padding with zeros
+             do{
+                 //given the current block, finds the node with minimum distance
+                 best_dist_idx.first=std::numeric_limits<uint32_t>::max();
+                 for(int cur_node=0;cur_node<c_block.getN();cur_node++)
+                 {
+                     DType d= comp.computeDist(c_block.getFeature<TData>(cur_node));
+                     if (d<best_dist_idx.first) best_dist_idx=std::make_pair(d,cur_node);
+                 }
+                 bn_info=c_block.getBlockNodeInfo(best_dist_idx.second);
+                 //if the node is leaf get word id and weight,else go to its children
+                 if ( bn_info->isleaf()){//if the node is leaf get word id and weight
+                      result[bn_info->getId()]+=bn_info->weight;
+                  }
+                 else setBlock(bn_info->getId(),c_block);//go to its children
+             }while( !bn_info->isleaf() && bn_info->getId()!=0);
+         }
+         return result;
+     }
+     template<typename Computer>
+     void  _transform2(const cv::Mat &features,uint32_t storeLevel,fBow &r1,fBow2 &r2){
+         Computer comp;
+              comp.setParams(_params._desc_size,_params._desc_size_bytes_wp);
+              using DType=typename Computer::DType;//distance type
+              using TData=typename Computer::TData;//data type
+
+              r1.clear();
+              r2.clear();
+              std::pair<DType,uint32_t> best_dist_idx(std::numeric_limits<uint32_t>::max(),0);//minimum distance found
+              block_node_info *bn_info;
+              int nbits=ceil(log2(_params._m_k));
+              for(int cur_feature=0;cur_feature<features.rows;cur_feature++){
+                  comp.startwithfeature(features.ptr<TData>(cur_feature));
+                  //ensure feature is in a
+                  Block c_block=getBlock(0);
+                  uint32_t level=0;//current level of recursion
+                  uint32_t curNode=0;//id of the current node of the tree
+                  //copy to another structure and add padding with zeros
+                  do{
+                      //given the current block, finds the node with minimum distance
+                      best_dist_idx.first=std::numeric_limits<uint32_t>::max();
+                      for(int cur_node=0;cur_node<c_block.getN();cur_node++)
+                      {
+                          DType d= comp.computeDist(c_block.getFeature<TData>(cur_node));
+                          if (d<best_dist_idx.first) best_dist_idx=std::make_pair(d,cur_node);
+                      }
+                      if( level==storeLevel)//if reached level,save
+                          r2[curNode].push_back( cur_feature);
+
+                      bn_info=c_block.getBlockNodeInfo(best_dist_idx.second);
+                      //if the node is leaf get weight,else go to its children
+                      if ( bn_info->isleaf()){
+                          r1[bn_info->getId()]+=bn_info->weight;
+                          if( level<storeLevel)//store level not reached, save now
+                              r2[curNode].push_back( cur_feature);
+                        break;
+                      }
+                      else setBlock(bn_info->getId(),c_block);//go to its children
+                      curNode= curNode<<nbits;
+                      curNode|=best_dist_idx.second;
+                      level++;
+                  }while( !bn_info->isleaf() && bn_info->getId()!=0);
+              }
+      }
 
 };
 
