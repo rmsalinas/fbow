@@ -107,7 +107,9 @@ set(EXTRA_EXE_LINKER_FLAGS "")
 set(EXTRA_EXE_LINKER_FLAGS_RELEASE "")
 set(EXTRA_EXE_LINKER_FLAGS_DEBUG "")
 
-IF(CMAKE_COMPILER_IS_GNUCXX OR MINGW)
+IF(CMAKE_CXX_COMPILER_ID MATCHES "GNU"
+   OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
+   OR MINGW)
     set(ENABLE_PROFILING 		OFF CACHE BOOL "Enable profiling in the GCC compiler (Add flags: -g -pg)")
     set(USE_OMIT_FRAME_POINTER 	ON CACHE BOOL "Enable -fomit-frame-pointer for GCC")
     if(${CMAKE_SYSTEM_PROCESSOR} MATCHES arm*) # We can use only -O2 because the -O3 causes gcc crash
