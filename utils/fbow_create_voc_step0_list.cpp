@@ -51,7 +51,7 @@ vector<string> readImagePathsFromFile(char * txtlist){
     return paths;
 }
 
-vector< cv::Mat  >  loadFeatures( std::vector<string> path_to_images,string descriptor="") throw (std::exception){
+vector< cv::Mat  >  loadFeatures( std::vector<string> path_to_images,string descriptor="") {
     //select detector
     cv::Ptr<cv::Feature2D> fdetector;
     if (descriptor=="orb")        fdetector=cv::ORB::create(2000);
@@ -85,7 +85,7 @@ vector< cv::Mat  >  loadFeatures( std::vector<string> path_to_images,string desc
 }
 
 // ----------------------------------------------------------------------------
-void saveToFile(string filename,const vector<cv::Mat> &features,  std::string  desc_name,bool rewrite =true)throw (std::exception){
+void saveToFile(string filename,const vector<cv::Mat> &features,  std::string  desc_name,bool rewrite =true){
 
     //test it is not created
     if (!rewrite){

@@ -151,8 +151,8 @@ private:
 
         }
 
-        uint32_t id;//id of this node in the tree
-        uint32_t parent;//id of the parent node
+        uint32_t id=std::numeric_limits<uint32_t>::max();//id of this node in the tree
+        uint32_t parent=std::numeric_limits<uint32_t>::max();//id of the parent node
         cv::Mat feature;//feature of this node
         //index of the feature this node represent(only if leaf and it stop because not enough points to create a new leave.
         //In case the node is a terminal point, but has many points beloging to its cluster, then, this is not set.
