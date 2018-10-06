@@ -112,7 +112,7 @@ class FBOW_API Vocabulary
     uint64_t hash()const;
 
 private:
-     void  setParams(  int aligment,int k,int desc_type,int desc_size, int nblocks,std::string desc_name)throw(std::runtime_error);
+     void  setParams(  int aligment,int k,int desc_type,int desc_size, int nblocks,std::string desc_name) ;
     struct params{
         char _desc_name_[50];//descriptor name. May be empty
         uint32_t _aligment=0,_nblocks=0 ;//memory aligment and total number of blocks
@@ -125,7 +125,7 @@ private:
         uint32_t _m_k=0;//number of children per node
     };
     params _params;
-    char * _data=0;//pointer to data
+    char * _data=nullptr;//pointer to data
 
     //structure represeting a information about node in a block
     struct block_node_info{
@@ -211,14 +211,14 @@ private:
         int _block_desc_size_bytes_wp;
         register_type *feature=0;
     public:
-         ~Lx(){if (feature!=0)AlignedFree(feature);}
+        virtual ~Lx(){if (feature!=0)AlignedFree(feature);}
         void setParams(int desc_size, int block_desc_size_bytes_wp){
             assert(block_desc_size_bytes_wp%aligment==0);
             _desc_size=desc_size;
             _block_desc_size_bytes_wp=block_desc_size_bytes_wp;
             assert(_block_desc_size_bytes_wp%sizeof(register_type )==0);
             _nwords=_block_desc_size_bytes_wp/sizeof(register_type );//number of aligned words
-            feature=(register_type*)AlignedAlloc(aligment,_nwords*sizeof(register_type ));
+            feature=static_cast<register_type*> (AlignedAlloc(aligment,_nwords*sizeof(register_type )));
            memset(feature,0,_nwords*sizeof(register_type ));
         }
         inline void startwithfeature(const register_type *feat_ptr){memcpy(feature,feat_ptr,_desc_size);}
@@ -228,7 +228,7 @@ private:
 
 
     struct L2_generic:public Lx<float,float,4>{
-         ~L2_generic(){ }
+        virtual ~L2_generic(){ }
         inline float computeDist(float *fptr){
             float d=0;
             for(int f=0;f<_nwords;f++)  d+=  (feature[f]-fptr[f])*(feature[f]-fptr[f]);
@@ -247,6 +247,7 @@ private:
 
 #else
     struct L2_avx_generic:public Lx<__m256,float,32>{
+        virtual ~L2_avx_generic(){}
         inline float computeDist(__m256 *ptr){
              __m256 sum=_mm256_setzero_ps(), sub_mult;
             //substract, multiply and accumulate

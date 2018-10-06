@@ -16,7 +16,7 @@ using namespace std;
 #include <chrono>
 class CmdLineParser{int argc; char **argv; public: CmdLineParser(int _argc,char **_argv):argc(_argc),argv(_argv){}  bool operator[] ( string param ) {int idx=-1;  for ( int i=0; i<argc && idx==-1; i++ ) if ( string ( argv[i] ) ==param ) idx=i;    return ( idx!=-1 ) ;    } string operator()(string param,string defvalue="-1"){int idx=-1;    for ( int i=0; i<argc && idx==-1; i++ ) if ( string ( argv[i] ) ==param ) idx=i; if ( idx==-1 ) return defvalue;   else  return ( argv[  idx+1] ); }};
 
- vector< cv::Mat  >  loadFeatures( std::vector<string> path_to_images,string descriptor="") throw (std::exception){
+ vector< cv::Mat  >  loadFeatures( std::vector<string> path_to_images,string descriptor="") {
     //select detector
     cv::Ptr<cv::Feature2D> fdetector;
     if (descriptor=="orb")        fdetector=cv::ORB::create(2000);
@@ -73,7 +73,9 @@ int main(int argc,char **argv){
             cout<<"time="<<double(std::chrono::duration_cast<std::chrono::milliseconds>(t_end-t_start).count())<<" ms"<<endl;
             cout<<vv.begin()->first<<" "<<vv.begin()->second<<endl;
             cout<<vv.rbegin()->first<<" "<<vv.rbegin()->second<<endl;
-            for(auto v:vv)cout<<v.first<<" ";cout<<endl;
+            for(auto v:vv)
+                cout<<v.first<<" ";
+            cout<<endl;
         }
 
     }catch(std::exception &ex){

@@ -565,8 +565,8 @@ void TemplatedVocabulary<TDescriptor,F>::create(
   m_words.clear();
   
   // expected_nodes = Sum_{i=0..L} ( k^i )
-	int expected_nodes = 
-		(int)((pow((double)m_k, (double)m_L + 1) - 1)/(m_k - 1));
+//	int expected_nodes =
+//		(int)((pow((double)m_k, (double)m_L + 1) - 1)/(m_k - 1));
 
  // m_nodes.reserve(expected_nodes); // avoid allocations when creating the tree
   

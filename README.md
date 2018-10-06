@@ -35,4 +35,6 @@ In directory vocabularies you have the ORBSLAM2 vocabulary (https://github.com/r
 ##
 ## Test speed
  Go to test and run the program test_dbow2VSfbow
-
+##
+## License
+This software is distributed under MIT License

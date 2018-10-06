@@ -9,11 +9,11 @@ namespace fbow{
 
 
 Vocabulary::~Vocabulary(){
-    if (_data!=0) AlignedFree( _data);
+    if (_data!=nullptr) AlignedFree( _data);
 }
 
 
-void Vocabulary::setParams(int aligment, int k, int desc_type, int desc_size, int nblocks, std::string desc_name)throw(std::runtime_error){
+void Vocabulary::setParams(int aligment, int k, int desc_type, int desc_size, int nblocks, std::string desc_name) {
     auto ns= desc_name.size()<static_cast<size_t>(49)?desc_name.size():128;
     desc_name.resize(ns);
 

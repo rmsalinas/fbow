@@ -17,7 +17,7 @@ using namespace std;
 #include <chrono>
 class CmdLineParser { int argc; char **argv; public: CmdLineParser(int _argc, char **_argv) :argc(_argc), argv(_argv) {}  bool operator[] (string param) { int idx = -1;  for (int i = 0; i<argc && idx == -1; i++) if (string(argv[i]) == param) idx = i;    return (idx != -1); } string operator()(string param, string defvalue = "-1") { int idx = -1;    for (int i = 0; i<argc && idx == -1; i++) if (string(argv[i]) == param) idx = i; if (idx == -1) return defvalue;   else  return (argv[idx + 1]); } };
 
-vector< cv::Mat  >  loadFeatures(std::vector<string> path_to_images, string descriptor = "") throw (std::exception) {
+vector< cv::Mat  >  loadFeatures(std::vector<string> path_to_images, string descriptor = "")  {
     //select detector
     cv::Ptr<cv::Feature2D> fdetector;
     if (descriptor == "orb")        fdetector = cv::ORB::create(2000);
@@ -67,18 +67,18 @@ int main(int argc, char **argv) {
         {
             filenames[i - 3] = { argv[i] };
         }
-        for (int i = 0; i<filenames.size(); ++i)
+        for (size_t i = 0; i<filenames.size(); ++i)
             features[i] = loadFeatures({ filenames[i] }, desc_name);
 
         fbow::fBow vv, vv2;
         int avgScore = 0;
         int counter = 0;
         auto t_start = std::chrono::high_resolution_clock::now();
-        for (int i = 0; i<features.size(); ++i)
+        for (size_t i = 0; i<features.size(); ++i)
         {
             vv = voc.transform(features[i][0]);
             map<double, int> score;
-            for (int j = 0; j<features.size(); ++j)
+            for (size_t j = 0; j<features.size(); ++j)
             {
 
                 vv2 = voc.transform(features[j][0]);
@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
 
         std::string command;
         int j = 0;
-        for (int i = 0; i < scores.size(); i++)
+        for (size_t i = 0; i < scores.size(); i++)
         {
             std::stringstream str;
 
