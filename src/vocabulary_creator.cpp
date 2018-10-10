@@ -1,6 +1,8 @@
 #include "vocabulary_creator.h"
+#ifdef _OPENMP
 #ifndef __ANDROID__
 #include <omp.h>
+#endif
 #else
 inline int omp_get_max_threads(){return 1;}
 inline int omp_get_thread_num(){return 0;}
