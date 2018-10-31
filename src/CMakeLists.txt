@@ -3,8 +3,8 @@ ADD_DEFINITIONS(-DNOMINMAX)
 SET(  srcs  fbow.cpp  vocabulary_creator.cpp )
 SET(  hdrs  fbow.h fbow_exports.h vocabulary_creator.h cpu.h)
 
+SET (THIS_LIBNAME ${EXTRALIBNAME}fbow)
 
-SET(THIS_LIBNAME fbow)
 
 ADD_LIBRARY(${THIS_LIBNAME} ${srcs} ${hdrs})
 
@@ -23,12 +23,12 @@ INSTALL(TARGETS ${THIS_LIBNAME}
         ARCHIVE DESTINATION lib COMPONENT main)			# Install the dll.a file in lib directory
 
 
-
+IF(FBOW_DEVINSTALL)
 
     INSTALL(FILES ${hdrs}
             DESTINATION include/fbow
             COMPONENT main)
-
+ENDIF()
 
 
 #set(sources

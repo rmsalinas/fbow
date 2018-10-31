@@ -48,6 +48,7 @@ OPTION(USE_CONTRIB "Set on/off" OFF)
 
 OPTION(USE_AVX "Set on/off" ON)
 OPTION(USE_SSE3 "Set on/off" ON)
+option(FBOW_DEVINSTALL 	"Set to OFF to disable source installation" ON)
 
 # ----------------------------------------------------------------------------
 #   Find Dependencies
