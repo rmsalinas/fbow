@@ -1,5 +1,6 @@
+IF(WIN32)
 ADD_DEFINITIONS(-DNOMINMAX)
-
+ENDIF()
 SET(  srcs  fbow.cpp  vocabulary_creator.cpp )
 SET(  hdrs  fbow.h fbow_exports.h vocabulary_creator.h cpu.h)
 
@@ -15,7 +16,7 @@ SET_TARGET_PROPERTIES(${THIS_LIBNAME} PROPERTIES 				# create *nix style library
         CLEAN_DIRECT_OUTPUT 1 					# allow creating static and shared libs without conflicts
         OUTPUT_NAME "${THIS_LIBNAME}${PROJECT_DLLVERSION}" 	# avoid conflicts between library and binary target names
 )
-TARGET_LINK_LIBRARIES(${THIS_LIBNAME} ${REQUIRED_LIBRARIES} )
+TARGET_LINK_LIBRARIES(${THIS_LIBNAME} ${OpenCV_LIBS} )
 
 INSTALL(TARGETS ${THIS_LIBNAME}
         RUNTIME DESTINATION bin COMPONENT main			# Install the dll file in bin directory
