@@ -235,6 +235,7 @@ add_definitions(-DNOMINMAX)
 ENDIF()#END OF COMPILER SPECIFIC OPTIONS
 find_package(OpenMP  )
 if (OPENMP_FOUND)
+        add_compile_options(-DUSE_OPENMP)
         set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 ENDIF()
@@ -274,6 +275,7 @@ message( STATUS "C++ flags (Relase+Debug):         ${CMAKE_CXX_FLAGS_RELWITHDEBI
 
 message( STATUS "CMAKE_CXX_FLAGS:         ${CMAKE_CXX_FLAGS}")
 message( STATUS "CMAKE_BINARY_DIR:         ${CMAKE_BINARY_DIR}")
+message( STATUS "OPENMP FOUND:         ${OPENMP_FOUND}")
 
 MESSAGE( STATUS )
 MESSAGE( STATUS "CMAKE_SYSTEM_PROCESSOR = ${CMAKE_SYSTEM_PROCESSOR}" )
