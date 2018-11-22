@@ -18,20 +18,13 @@ FBOW (Fast Bag of Words) is an extremmely optimized version of the DBow2/DBow3 l
 ##
 ## Citing
 
-If use this project please cite
 
-@online{Fbow,
-  author = {Rafael Muñoz-Salinas},
-  title = {{FBox} Fast Bag of Words},
-  year = 2017,
-  url = {https://github.com/rmsalinas/fbow},
-  urldate = {2017-02-17}
-}
+This project is part of the ucoslam project. Visit ucoslam.com for more info about citing
 
 ##
 ## Vocabularies
 
-In directory vocabularies you have the ORBSLAM2 vocabulary (https://github.com/raulmur/ORB_SLAM2/tree/master/Vocabulary) in fbow format.
+In directory vocabularies you have one already prepared for orb.
 ##
 ## Test speed
  Go to test and run the program test_dbow2VSfbow
