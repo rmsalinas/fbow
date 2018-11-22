@@ -18,8 +18,7 @@ FBOW (Fast Bag of Words) is an extremmely optimized version of the DBow2/DBow3 l
 ##
 ## Citing
 
-
-This project is part of the ucoslam project. Visit ucoslam.com for more info about citing
+If you use this project for academic purposes, you must cite us. This project is part of the ucoslam project. Visit ucoslam.com for more info about citing.
 
 ##
 ## Vocabularies
