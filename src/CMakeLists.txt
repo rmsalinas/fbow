@@ -1,7 +1,7 @@
 ADD_DEFINITIONS(-DNOMINMAX)
 
-SET(  srcs  fbow.cpp  vocabulary_creator.cpp )
-SET(  hdrs  fbow.h fbow_exports.h vocabulary_creator.h cpu.h)
+SET(  srcs  fbow.cpp  vocabulary_creator.cpp Database.cpp QueryResults.cpp)
+SET(  hdrs  fbow.h fbow_exports.h vocabulary_creator.h cpu.h Database.h QueryResults.h)
 
 SET (THIS_LIBNAME ${EXTRALIBNAME}fbow)
 

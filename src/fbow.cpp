@@ -7,6 +7,18 @@
 
 namespace fbow{
 
+Vocabulary::Vocabulary(const Vocabulary& voc){
+	*this = voc;
+}
+
+Vocabulary& Vocabulary::operator = (const Vocabulary &voc){
+	this->clear();
+	this->_params = voc._params;
+	_data=(char*)AlignedAlloc(_params._aligment,_params._total_size);
+	memcpy(this->_data, voc._data, _params._total_size);
+	this->cpu_info = voc.cpu_info;
+	return *this;
+}
 
 Vocabulary::~Vocabulary(){
     if (_data!=nullptr) AlignedFree( _data);
