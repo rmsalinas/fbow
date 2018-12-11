@@ -29,8 +29,9 @@ void VocabularyCreator::create(fbow::Vocabulary &Voc, const std::vector<cv::Mat>
     if(!(_descType==CV_8UC1|| _descType==CV_32FC1))
         throw std::runtime_error("Descriptors must be binary CV_8UC1 or float  CV_32FC1");
     if (_descType==CV_8UC1){
-//        if (_descNBytes==32)dist_func=distance_hamming_32bytes;
-//        else
+        if (_descNBytes==32)
+            dist_func=distance_hamming_32bytes;
+        else
             dist_func=distance_hamming_generic;
     }
     else  dist_func=distance_float_generic;

@@ -53,8 +53,6 @@ struct FBOW_API fBow2:std::map<uint32_t,std::vector<uint32_t>> {
  */
 class FBOW_API Vocabulary
 {
-
-
  static inline void * AlignedAlloc(int __alignment,int size){
      assert(__alignment<256);
 
@@ -72,16 +70,22 @@ class FBOW_API Vocabulary
      *(ptr-1)=(unsigned char)off; //save in prev, the offset  to properly remove it
      return ptr;
  }
+  
      static inline void AlignedFree(void *ptr){
          unsigned char *uptr=(unsigned char *)ptr;
          unsigned char off= *(uptr-1);
          uptr-=off;
          std::free(uptr);
      }
+  
+  using Data_ptr = std::unique_ptr<char[], decltype(&AlignedFree)>;
+
     friend class VocabularyCreator;
+
  public:
 
-    ~Vocabulary();
+    Vocabulary() = default;
+    Vocabulary(Vocabulary&&) = default;
 
     //transform the features stored as rows in the returned BagOfWords
     fBow transform(const cv::Mat &features);
@@ -125,7 +129,7 @@ private:
         uint32_t _m_k=0;//number of children per node
     };
     params _params;
-    char * _data=nullptr;//pointer to data
+    Data_ptr _data = Data_ptr(nullptr, &AlignedFree);//pointer to data
 
     //structure represeting a information about node in a block
     struct block_node_info{
@@ -190,9 +194,9 @@ private:
 
 
     //returns a block structure pointing at block b
-    inline Block getBlock(uint32_t b){assert( _data!=0);assert(b<_params._nblocks); return Block( _data+ b*_params._block_size_bytes_wp,_params._desc_size, _params._desc_size_bytes_wp,_params._feature_off_start, _params._child_off_start);}
+    inline Block getBlock(uint32_t b) { assert(_data != 0); assert(b < _params._nblocks); return Block(_data.get() + b * _params._block_size_bytes_wp, _params._desc_size, _params._desc_size_bytes_wp, _params._feature_off_start, _params._child_off_start); }
     //given a block already create with getBlock, moves it to point to block b
-    inline void setBlock(uint32_t b,Block &block){ block._blockstart= _data+ b*_params._block_size_bytes_wp;}
+    inline void setBlock(uint32_t b, Block &block) { block._blockstart = _data.get() + b * _params._block_size_bytes_wp; }
 
     //information about the cpu so that mmx,sse or avx extensions can be employed
     std::shared_ptr<cpu> cpu_info;
