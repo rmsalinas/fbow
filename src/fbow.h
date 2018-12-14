@@ -72,19 +72,20 @@ class FBOW_API Vocabulary
  }
   
      static inline void AlignedFree(void *ptr){
+         if(ptr==nullptr)return;
          unsigned char *uptr=(unsigned char *)ptr;
          unsigned char off= *(uptr-1);
          uptr-=off;
          std::free(uptr);
      }
   
-  using Data_ptr = std::unique_ptr<char[], decltype(&AlignedFree)>;
+ // using Data_ptr = std::unique_ptr<char[], decltype(&AlignedFree)>;
 
     friend class VocabularyCreator;
 
  public:
 
-    Vocabulary() = default;
+    Vocabulary(): _data((char*)nullptr,&AlignedFree){}
     Vocabulary(Vocabulary&&) = default;
 
     //transform the features stored as rows in the returned BagOfWords
@@ -107,7 +108,7 @@ class FBOW_API Vocabulary
     //returns the branching factor (number of children per node)
     uint32_t getK()const{return _params._m_k;}
     //indicates whether this object is valid
-    bool isValid()const{return _data!=0;}
+    bool isValid()const{return _data.get()!=nullptr;}
     //total number of blocks
     size_t size()const{return _params._nblocks;}
     //removes all data
@@ -129,7 +130,8 @@ private:
         uint32_t _m_k=0;//number of children per node
     };
     params _params;
-    Data_ptr _data = Data_ptr(nullptr, &AlignedFree);//pointer to data
+    std::unique_ptr<char[], decltype(&AlignedFree)> _data;
+
 
     //structure represeting a information about node in a block
     struct block_node_info{
@@ -194,7 +196,7 @@ private:
 
 
     //returns a block structure pointing at block b
-    inline Block getBlock(uint32_t b) { assert(_data != 0); assert(b < _params._nblocks); return Block(_data.get() + b * _params._block_size_bytes_wp, _params._desc_size, _params._desc_size_bytes_wp, _params._feature_off_start, _params._child_off_start); }
+    inline Block getBlock(uint32_t b) { assert(_data.get() != nullptr); assert(b < _params._nblocks); return Block(_data.get() + b * _params._block_size_bytes_wp, _params._desc_size, _params._desc_size_bytes_wp, _params._feature_off_start, _params._child_off_start); }
     //given a block already create with getBlock, moves it to point to block b
     inline void setBlock(uint32_t b, Block &block) { block._blockstart = _data.get() + b * _params._block_size_bytes_wp; }
 
