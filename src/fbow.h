@@ -89,8 +89,8 @@ class FBOW_API Vocabulary
     Vocabulary(Vocabulary&&) = default;
 
     //transform the features stored as rows in the returned BagOfWords
-    fBow transform(const cv::Mat &features);
-    void transform(const cv::Mat &features, int level,fBow &result,fBow2&result2);
+    fBow transform(const cv::Mat &features) const;
+    void transform(const cv::Mat &features, int level,fBow &result,fBow2&result2) const;
 
 
     //loads/saves from a file
@@ -170,24 +170,43 @@ private:
     //CiWi are the so called block_node_info (see structure up)
     //Ci : either if the node is leaf (msb is set to 1) or not. If not leaf, the remaining 31 bits is the block where its children are. Else, it is the index of the feature that it represent
     //Wi: float value empkoyed to know the weight of a leaf node (employed in cases of bagofwords)
-    struct Block{
-        Block(char * bsptr,uint64_t ds,uint64_t ds_wp,uint64_t fo,uint64_t co):_blockstart(bsptr),_desc_size_bytes(ds),_desc_size_bytes_wp(ds_wp),_feature_off_start(fo),_child_off_start(co){}
+    template<typename T>
+    struct Block {
+
+        // conditionally qualifies its argument as const
+        // depending on whether T is a const type as well
+        template<typename TT>
+        using conditional_const =
+          std::conditional_t<
+            std::is_const_v<T>,
+            std::add_const_t<TT>,
+            TT>;
+
+        Block(T* bsptr,uint64_t ds,uint64_t ds_wp,uint64_t fo,uint64_t co):_blockstart(bsptr),_desc_size_bytes(ds),_desc_size_bytes_wp(ds_wp),_feature_off_start(fo),_child_off_start(co){}
         Block(uint64_t ds,uint64_t ds_wp,uint64_t fo,uint64_t co):_desc_size_bytes(ds),_desc_size_bytes_wp(ds_wp),_feature_off_start(fo),_child_off_start(co){}
 
-        inline  uint16_t getN()const{return (*((uint16_t*)(_blockstart)));}
-        inline  void setN(uint16_t n){ *((uint16_t*)(_blockstart))=n;}
+        inline  uint16_t getN() const { return (*((conditional_const<uint16_t>*)(_blockstart))); }
+        inline  void setN(uint16_t n) { *((conditional_const<uint16_t>*)(_blockstart)) = n; }
 
-        inline bool isLeaf()const{return *((uint16_t*)(_blockstart)+1);}
-        inline void setLeaf(bool v)const{*((uint16_t*)(_blockstart)+1)=1;}
+        inline bool isLeaf() const { return *((conditional_const<uint16_t>*)(_blockstart) + 1); }
+        inline void setLeaf(bool v) { *((conditional_const<uint16_t>*)(_blockstart) + 1) = 1; }
 
-        inline void setParentId(uint32_t pid){*(((uint32_t*)(_blockstart))+1)=pid;}
-        inline uint32_t  getParentId(){ return *(((uint32_t*)(_blockstart))+1);}
+        inline void setParentId(uint32_t pid) { *(((conditional_const<uint32_t>*)(_blockstart)) + 1) = pid; }
+        inline uint32_t getParentId() const { return *(((conditional_const<uint32_t>*)(_blockstart)) + 1); }
 
-        inline  block_node_info * getBlockNodeInfo(int i){  return (block_node_info *)(_blockstart+_child_off_start+i*sizeof(block_node_info)); }
-        inline  void setFeature(int i,const cv::Mat &feature){memcpy( _blockstart+_feature_off_start+i*_desc_size_bytes_wp,feature.ptr<char>(0),feature.elemSize1()*feature.cols); }
-        inline  void getFeature(int i,cv::Mat  feature){    memcpy( feature.ptr<char>(0), _blockstart+_feature_off_start+i*_desc_size_bytes,_desc_size_bytes ); }
-        template<typename T> inline  T*getFeature(int i){return (T*) (_blockstart+_feature_off_start+i*_desc_size_bytes_wp);}
-        char *_blockstart;
+        inline conditional_const<block_node_info>* getBlockNodeInfo(int i) const
+          { return (conditional_const<block_node_info>*)(_blockstart + _child_off_start + i * sizeof(block_node_info)); }
+
+        inline void setFeature(int i,const cv::Mat &feature)
+          { memcpy(_blockstart + _feature_off_start + i * _desc_size_bytes_wp, feature.ptr<char>(0), feature.elemSize1()*feature.cols); }
+        
+        inline void getFeature(int i,cv::Mat  feature) const
+          { memcpy(feature.ptr<char>(0), _blockstart + _feature_off_start + i * _desc_size_bytes, _desc_size_bytes); }
+
+        template<typename T> inline conditional_const<T>*getFeature(int i)
+          { return (conditional_const<T>*)(_blockstart + _feature_off_start + i * _desc_size_bytes_wp); }
+        
+        T* _blockstart;
         uint64_t _desc_size_bytes=0;//size of the descriptor(without padding)
         uint64_t _desc_size_bytes_wp=0;//size of the descriptor(includding padding)
         uint64_t _feature_off_start=0;
@@ -196,12 +215,26 @@ private:
 
 
     //returns a block structure pointing at block b
-    inline Block getBlock(uint32_t b) { assert(_data.get() != nullptr); assert(b < _params._nblocks); return Block(_data.get() + b * _params._block_size_bytes_wp, _params._desc_size, _params._desc_size_bytes_wp, _params._feature_off_start, _params._child_off_start); }
+    inline Block<const char> getBlock(uint32_t b) const
+    {
+      assert(_data != nullptr);
+      assert(b < _params._nblocks);
+      return Block<const char>(const_cast<const char*>(_data.get()) + b * _params._block_size_bytes_wp, _params._desc_size, _params._desc_size_bytes_wp, _params._feature_off_start, _params._child_off_start);
+    }
+
+    inline Block<char>       getBlock(uint32_t b)
+    {
+      assert(_data != nullptr);
+      assert(b < _params._nblocks);
+      return Block<char>(_data.get() + b * _params._block_size_bytes_wp, _params._desc_size, _params._desc_size_bytes_wp, _params._feature_off_start, _params._child_off_start);
+    }
+
     //given a block already create with getBlock, moves it to point to block b
-    inline void setBlock(uint32_t b, Block &block) { block._blockstart = _data.get() + b * _params._block_size_bytes_wp; }
+    template<typename T>
+    inline void setBlock(uint32_t b, Block<T>& block) const { block._blockstart = _data.get() + b * _params._block_size_bytes_wp; }
 
     //information about the cpu so that mmx,sse or avx extensions can be employed
-    std::shared_ptr<cpu> cpu_info;
+    mutable std::shared_ptr<cpu> cpu_info;
 
 
     ////////////////////////////////////////////////////////////
@@ -228,14 +261,14 @@ private:
            memset(feature,0,_nwords*sizeof(register_type ));
         }
         inline void startwithfeature(const register_type *feat_ptr){memcpy(feature,feat_ptr,_desc_size);}
-        virtual distType computeDist(register_type *fptr)=0;
+        virtual distType computeDist(const register_type *fptr)=0;
 
     };
 
 
     struct L2_generic:public Lx<float,float,4>{
         virtual ~L2_generic(){ }
-        inline float computeDist(float *fptr){
+        inline float computeDist(const float *fptr){
             float d=0;
             for(int f=0;f<_nwords;f++)  d+=  (feature[f]-fptr[f])*(feature[f]-fptr[f]);
             return d;
@@ -243,10 +276,10 @@ private:
     };
 #ifdef __ANDROID__
     //fake elements to allow compilation
-    struct L2_avx_generic:public Lx<uint64_t,float,32>{inline float computeDist(uint64_t *ptr){return std::numeric_limits<float>::max();}};
-    struct L2_se3_generic:public Lx<uint64_t,float,32>{inline float computeDist(uint64_t *ptr){return std::numeric_limits<float>::max();}};
-    struct L2_sse3_16w:public Lx<uint64_t,float,32>{inline float computeDist(uint64_t *ptr){return std::numeric_limits<float>::max();}};
-    struct L2_avx_8w:public Lx<uint64_t,float,32>{inline float computeDist(uint64_t *ptr){return std::numeric_limits<float>::max();}};
+    struct L2_avx_generic:public Lx<uint64_t,float,32>{inline float computeDist(const uint64_t *ptr){return std::numeric_limits<float>::max();}};
+    struct L2_se3_generic:public Lx<uint64_t,float,32>{inline float computeDist(const uint64_t *ptr){return std::numeric_limits<float>::max();}};
+    struct L2_sse3_16w:public Lx<uint64_t,float,32>{inline float computeDist(const uint64_t *ptr){return std::numeric_limits<float>::max();}};
+    struct L2_avx_8w:public Lx<uint64_t,float,32>{inline float computeDist(const uint64_t *ptr){return std::numeric_limits<float>::max();}};
 
 
 
@@ -254,7 +287,7 @@ private:
 #else
     struct L2_avx_generic:public Lx<__m256,float,32>{
         virtual ~L2_avx_generic(){}
-        inline float computeDist(__m256 *ptr){
+        inline float computeDist(const __m256 *ptr){
              __m256 sum=_mm256_setzero_ps(), sub_mult;
             //substract, multiply and accumulate
             for(int i=0;i<_nwords;i++){
@@ -269,7 +302,7 @@ private:
         }
     };
     struct L2_se3_generic:public Lx<__m128,float,16>{
-        inline float computeDist(__m128 *ptr){
+        inline float computeDist(const __m128 *ptr){
              __m128 sum=_mm_setzero_ps(), sub_mult;
             //substract, multiply and accumulate
             for(int i=0;i<_nwords;i++){
@@ -285,7 +318,7 @@ private:
     };
     struct L2_sse3_16w:public Lx<__m128,float,16> {
 
-        inline float computeDist(__m128 *ptr){
+        inline float computeDist(const __m128 *ptr){
              __m128 sum=_mm_setzero_ps(), sub_mult;
             //substract, multiply and accumulate
             for(int i=0;i<16;i++){
@@ -302,7 +335,7 @@ private:
     //specific for surf in avx
     struct L2_avx_8w:public Lx<__m256,float,32> {
 
-        inline float computeDist(__m256 *ptr){
+        inline float computeDist(const __m256 *ptr){
              __m256 sum=_mm256_setzero_ps(), sub_mult;
             //substract, multiply and accumulate
 
@@ -323,7 +356,7 @@ private:
 
     //generic hamming distance calculator
      struct  L1_x64:public Lx<uint64_t,uint64_t,8>{
-         inline uint64_t computeDist(uint64_t *feat_ptr){
+         inline uint64_t computeDist(const uint64_t *feat_ptr){
              uint64_t result = 0;
              for(int i = 0; i < _nwords; ++i ) result += std::bitset<64>(feat_ptr[i] ^ feature[i]).count();
              return result;
@@ -331,7 +364,7 @@ private:
      };
 
      struct  L1_x32:public Lx<uint32_t,uint32_t,8>{
-         inline uint32_t computeDist(uint32_t *feat_ptr){
+         inline uint32_t computeDist(const uint32_t *feat_ptr){
              uint32_t result = 0;
              for(int i = 0; i < _nwords; ++i ) result +=  std::bitset<32>(feat_ptr[i] ^ feature[i]).count();
              return result;
@@ -341,7 +374,7 @@ private:
 
      //for orb
      struct L1_32bytes:public Lx<uint64_t,uint64_t,8>{
-         inline uint64_t computeDist(uint64_t *feat_ptr){
+         inline uint64_t computeDist(const uint64_t *feat_ptr){
               return uint64_popcnt(feat_ptr[0]^feature[0])+ uint64_popcnt(feat_ptr[1]^feature[1])+
                       uint64_popcnt(feat_ptr[2]^feature[2])+uint64_popcnt(feat_ptr[3]^feature[3]);
          }
@@ -352,7 +385,7 @@ private:
      };
      //for akaze
      struct L1_61bytes:public Lx<uint64_t,uint64_t,8>{
-         inline uint64_t computeDist(uint64_t *feat_ptr){
+         inline uint64_t computeDist(const uint64_t *feat_ptr){
 
               return uint64_popcnt(feat_ptr[0]^feature[0])+ uint64_popcnt(feat_ptr[1]^feature[1])+
                       uint64_popcnt(feat_ptr[2]^feature[2])+uint64_popcnt(feat_ptr[3]^feature[3])+
@@ -366,7 +399,7 @@ private:
 
 
      template<typename Computer>
-     fBow  _transform(const cv::Mat &features){
+     fBow  _transform(const cv::Mat &features) const {
          Computer comp;
          comp.setParams(_params._desc_size,_params._desc_size_bytes_wp);
          using DType=typename Computer::DType;//distance type
@@ -374,11 +407,12 @@ private:
 
          fBow  result;
          std::pair<DType,uint32_t> best_dist_idx(std::numeric_limits<uint32_t>::max(),0);//minimum distance found
-         block_node_info *bn_info;
+         const block_node_info *bn_info;
          for(int cur_feature=0;cur_feature<features.rows;cur_feature++){
              comp.startwithfeature(features.ptr<TData>(cur_feature));
              //ensure feature is in a
-             Block c_block=getBlock(0);
+             //(jbfuehrer: template type can automatically be deduced since C++17)
+             Block<const char> c_block=getBlock(0);
                //copy to another structure and add padding with zeros
              do{
                  //given the current block, finds the node with minimum distance
@@ -399,7 +433,7 @@ private:
          return result;
      }
      template<typename Computer>
-     void  _transform2(const cv::Mat &features,uint32_t storeLevel,fBow &r1,fBow2 &r2){
+     void  _transform2(const cv::Mat &features,uint32_t storeLevel,fBow &r1,fBow2 &r2) const {
          Computer comp;
               comp.setParams(_params._desc_size,_params._desc_size_bytes_wp);
               using DType=typename Computer::DType;//distance type
@@ -408,12 +442,13 @@ private:
               r1.clear();
               r2.clear();
               std::pair<DType,uint32_t> best_dist_idx(std::numeric_limits<uint32_t>::max(),0);//minimum distance found
-              block_node_info *bn_info;
+              const block_node_info *bn_info;
               int nbits=ceil(log2(_params._m_k));
               for(int cur_feature=0;cur_feature<features.rows;cur_feature++){
                   comp.startwithfeature(features.ptr<TData>(cur_feature));
                   //ensure feature is in a
-                  Block c_block=getBlock(0);
+                  //(jbfuehrer: template type can automatically be deduced since C++17)
+                  Block<const char> c_block=getBlock(0);
                   uint32_t level=0;//current level of recursion
                   uint32_t curNode=0;//id of the current node of the tree
                   //copy to another structure and add padding with zeros
