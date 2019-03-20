@@ -203,8 +203,8 @@ private:
         inline void getFeature(int i,cv::Mat  feature) const
           { memcpy(feature.ptr<char>(0), _blockstart + _feature_off_start + i * _desc_size_bytes, _desc_size_bytes); }
 
-        template<typename T> inline conditional_const<T>*getFeature(int i)
-          { return (conditional_const<T>*)(_blockstart + _feature_off_start + i * _desc_size_bytes_wp); }
+        template<typename TT> inline conditional_const<TT>*getFeature(int i)
+          { return (conditional_const<TT>*)(_blockstart + _feature_off_start + i * _desc_size_bytes_wp); }
         
         T* _blockstart;
         uint64_t _desc_size_bytes=0;//size of the descriptor(without padding)
