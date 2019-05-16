@@ -82,6 +82,7 @@ private:
     void createLevel(const std::vector<uint32_t> &findices,  int parent=0, int curL=0);
     void createLevel(int parent=0, int curL=0, bool recursive=true);
     std::vector<uint32_t> getInitialClusterCenters(const std::vector<uint32_t> &findices);
+    std::vector<uint32_t> initialClusterCentersKmpp(const std::vector<uint32_t> &findices);
 
     std::size_t vhash(const std::vector<std::vector<uint32_t> >& v_vec)  ;
 
@@ -148,7 +149,6 @@ private:
     struct Node{
         Node(){}
         Node(uint32_t Id,uint32_t Parent,const cv::Mat &Feature, uint32_t Feat_idx=std::numeric_limits<uint32_t>::max() ):id(Id),parent(Parent),feature(Feature),feat_idx(Feat_idx){
-
         }
 
         uint32_t id=std::numeric_limits<uint32_t>::max();//id of this node in the tree
