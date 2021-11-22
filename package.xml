@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>fbow</name>
+  <version>1.1.0</version>
+  <description>Fast Bag of Words</description>
+
+  <maintainer>Rafael Muñoz-Salinas</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>cmake</buildtool_depend>
+
+  <build_depend>libopencv-dev</build_depend>
+
+  <export>
+    <!-- Specify that this is not really a Catkin package-->
+    <build_type>cmake</build_type>
+  </export>
+</package>
